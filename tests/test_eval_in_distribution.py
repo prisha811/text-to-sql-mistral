@@ -10,8 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from eval_in_distribution import (check_sql_valid, count_joins, norm_question,  # noqa: E402
-                                  score_row, select_rows, summarise)
+from eval_in_distribution import (KNOWN_FIRST_TRAIN_QUESTION, check_sql_valid,  # noqa: E402
+                                  check_split_matches_training, count_joins, norm_question,
+                                  score_row, select_from_pool, select_rows, summarise)
 
 # Taken from the schema-check output (multi-table row of sql-create-context).
 MULTI_CONTEXT = ("CREATE TABLE department (creation VARCHAR, department_id VARCHAR); "
@@ -94,6 +95,29 @@ def test_summarise_counts():
     assert s["finetuned"]["single_table"]["more_joins_than_gold"]["k"] == 1
     assert s["finetuned"]["multi_table"]["exact_match"]["k"] == 1
     assert norm_question("  How   MANY? ") == "how many?"
+
+
+def test_split_check_accepts_the_notebook_split_and_rejects_others():
+    check_split_matches_training(KNOWN_FIRST_TRAIN_QUESTION)  # must not raise
+    try:
+        check_split_matches_training("Some other first question?")
+    except RuntimeError as exc:
+        assert "does NOT match" in str(exc)
+    else:
+        raise AssertionError("a different split must be rejected")
+
+
+def test_validation_style_pool_has_both_groups_and_drops_trained_questions():
+    train_questions = ["How many heads are there?", "List all departments."]
+    questions = ["How many heads are there?", "Which heads were born in Alabama?", "What is the total?"]
+    contexts = [MULTI_CONTEXT, MULTI_CONTEXT, SINGLE_CONTEXT]
+    answers = ["SELECT COUNT(*) FROM head", "SELECT born_state FROM head", "SELECT total FROM table_14260687_3"]
+    rows, info = select_from_pool(questions, contexts, answers, train_questions, per_group=10,
+                                  source="validation")
+    assert {r["group"] for r in rows} == {"single_table", "multi_table"}
+    assert all(r["source"] == "validation" for r in rows)
+    assert info["removed_question_overlap_with_training_rows"] == 1
+    assert {r["index"] for r in rows} == {1, 2}   # position in the validation split
 
 
 if __name__ == "__main__":

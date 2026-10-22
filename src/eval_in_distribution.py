@@ -3,29 +3,40 @@ eval_in_distribution.py - is the adapter healthy on the KIND of data it was trai
 
 Why: on the 4-table company database the adapter scored far below the base model. Before
 blaming (or retraining) the adapter we need to know whether it works on data like its
-training data. This script runs BOTH models on b-mc2/sql-create-context rows that the adapter
-never saw (index >= 5500; training used rows 0-5499), with the exact training prompt, split into:
+training data, with the exact training prompt, separately for single-table and multi-table schemas.
 
-    single-table rows   (1 CREATE TABLE in the schema)
-    multi-table rows    (2+ CREATE TABLE statements)
+Two sources of rows the adapter never trained on (choose with --source):
 
-What it measures (no data is needed, because these rows come without table contents):
+  validation (default)  The 500 validation rows from the training notebook. The split is rebuilt with
+                        the notebook's own code (first 5,500 rows, test_size=500, seed=42) and checked
+                        against the notebook's first training example. These rows never produced a
+                        gradient update. They were only used to log validation loss, and the final
+                        adapter was saved without picking a "best" checkpoint. They contain BOTH
+                        single-table and multi-table rows. Caveat: Spider-style datasets contain
+                        similar questions, so this measures same-distribution performance and can be
+                        optimistic.
+  tail                  Rows with index >= 5,500. The first run showed these are ALL single-table:
+                        every multi-table row of the dataset is inside the first 5,500 rows. Useful as
+                        an extra single-table check only.
+
+In both cases rows whose question text also appears among the TRAINING questions are removed
+(use --allow-overlap to keep them).
+
+What it measures (no table contents exist for these rows, so no result comparison is possible):
   Valid SQL         the query compiles on EMPTY tables built from the row's own schema
                     (catches syntax errors and wrong table/column names).
   Exact match       normalised SQL text equals the gold SQL. WARNING: this favours the
                     fine-tuned model, because the gold SQL's style (T1/T2 aliases, quote style)
                     is what it was trained on. A zero-shot base model can be right and still
                     not match. Read it as "did the adapter learn the training style".
-  Extra-JOIN rate   prediction has MORE joins than the gold query - the failure pattern seen
-                    on the company database.
-
-Rows whose question text also appears among the first 5,500 questions are removed
-(use --allow-overlap to keep them), because identical questions would not be unseen.
+  Extra-JOIN rate   prediction has MORE joins than the gold query - the failure pattern seen on the
+                    company database. On single-table rows there is almost nothing to join, so
+                    this number only means something on multi-table rows.
 
 Usage (GPU needed for generation, from the repo root):
     python src/eval_in_distribution.py --per-group 5          # smoke test
-    python src/eval_in_distribution.py                        # 100 single + 100 multi-table rows
-    python src/eval_in_distribution.py --score-only outputs/in_distribution/generated.json
+    python src/eval_in_distribution.py                        # up to 100 single + 100 multi-table rows
+    python src/eval_in_distribution.py --score-only outputs/in_distribution/validation/generated.json
                                                               # re-score a saved file (no GPU/dataset)
 """
 
@@ -49,7 +60,13 @@ from prompts import build_prompt  # noqa: E402
 
 DATASET_NAME = "b-mc2/sql-create-context"
 TRAIN_ROWS = 5500          # rows 0..5499 were used for training/validation in the notebook
-SEED = 42
+SEED = 42                  # seed for sampling rows
+SPLIT_SEED = 42            # seed the notebook used for train_test_split
+VALIDATION_SIZE = 500
+# First example of the notebook's training split (LLM.ipynb, cell 32/35). If the rebuilt split does
+# not start with this question, it is not the split the adapter was trained on.
+KNOWN_FIRST_TRAIN_QUESTION = ("How many million of windows phones were shipped during the quarter "
+                              "that shipped 216.2 million total?")
 DEFAULT_OUT_DIR = ROOT / "outputs" / "in_distribution"
 MODELS = ("base", "finetuned")
 LABELS = {"base": "Base Mistral 7B", "finetuned": "Fine-tuned (QLoRA)"}
@@ -83,42 +100,61 @@ def check_sql_valid(context, sql):
         conn.close()
 
 
-def select_rows(questions, contexts, answers, per_group, seed=SEED,
-                train_rows=TRAIN_ROWS, allow_overlap=False):
+def check_split_matches_training(first_train_question):
+    """The rebuilt split must start with the notebook's first training example."""
+    if first_train_question != KNOWN_FIRST_TRAIN_QUESTION:
+        raise RuntimeError(
+            "The rebuilt train/validation split does NOT match the notebook's split "
+            f"(first training question is {first_train_question!r}). The 'validation' rows may "
+            "include rows the adapter was trained on, so they cannot be called held-out. "
+            "Stop and check the datasets version, or use --source tail for single-table rows.")
+
+
+def select_from_pool(questions, contexts, answers, seen_questions, per_group, seed=SEED,
+                     allow_overlap=False, index_offset=0, source="tail"):
     """
-    Pick `per_group` single-table and `per_group` multi-table rows from index >= train_rows.
-    Returns (rows, info). Rows whose gold SQL does not compile on their own schema are dropped.
+    Pick up to `per_group` single-table and `per_group` multi-table rows from a pool.
+    Rows whose question also appears in `seen_questions` (the training questions) are removed.
+    Rows whose gold SQL does not compile on their own schema are dropped.
+    Returns (rows, info).
     """
-    seen_questions = {norm_question(q) for q in questions[:train_rows]}
+    seen = {norm_question(q) for q in seen_questions}
     single, multi = [], []
     removed_overlap = 0
-    for i in range(train_rows, len(questions)):
-        if not allow_overlap and norm_question(questions[i]) in seen_questions:
+    for pos, (question, context, answer) in enumerate(zip(questions, contexts, answers)):
+        if not allow_overlap and norm_question(question) in seen:
             removed_overlap += 1
             continue
-        count = n_tables(contexts[i])
+        count = n_tables(context)
         if count == 0:
             continue
-        row = {"index": i, "n_tables": count, "question": questions[i],
-               "context": contexts[i], "gold_sql": answers[i]}
+        row = {"index": index_offset + pos, "source": source, "n_tables": count,
+               "question": question, "context": context, "gold_sql": answer}
         (single if count == 1 else multi).append(row)
 
     rng = random.Random(seed)
     chosen, dropped_bad_gold = [], 0
     for group, pool in (("single_table", single), ("multi_table", multi)):
-        sample = rng.sample(pool, min(per_group, len(pool)))
-        for row in sample:
+        for row in rng.sample(pool, min(per_group, len(pool))):
             ok, _ = check_sql_valid(row["context"], row["gold_sql"])
             if not ok:
                 dropped_bad_gold += 1
                 continue
             row["group"] = group
             chosen.append(row)
-    info = {"candidates_single": len(single), "candidates_multi": len(multi),
+    info = {"source": source, "candidates_single": len(single), "candidates_multi": len(multi),
             "removed_question_overlap_with_training_rows": removed_overlap,
             "dropped_gold_not_compiling": dropped_bad_gold,
             "seed": seed, "per_group_requested": per_group}
     return chosen, info
+
+
+def select_rows(questions, contexts, answers, per_group, seed=SEED,
+                train_rows=TRAIN_ROWS, allow_overlap=False):
+    """'tail' source: rows with index >= train_rows, never used for training or validation."""
+    return select_from_pool(questions[train_rows:], contexts[train_rows:], answers[train_rows:],
+                            questions[:train_rows], per_group, seed, allow_overlap,
+                            index_offset=train_rows, source="tail")
 
 
 def score_row(row, model):
@@ -164,6 +200,9 @@ def print_summary(summary):
     print("=" * 112)
     for group in ("single_table", "multi_table", "all"):
         print(f"\n[{group}]")
+        if summary[MODELS[0]][group]["n"] == 0:
+            print("  (no rows in this group)")
+            continue
         print(f"  {'Model':<20} {'Valid SQL':<34} {'Exact match (favours fine-tuned)':<38} {'More JOINs than gold'}")
         for model in MODELS:
             e = summary[model][group]
@@ -247,15 +286,18 @@ def generate_all(rows, meta, out_dir, max_new_tokens):
 # --------------------------------------------------------------------------- main
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--per-group", type=int, default=100, help="rows per group (single/multi table)")
+    parser.add_argument("--source", choices=["validation", "tail"], default="validation",
+                        help="where the unseen rows come from (default: the notebook's 500 validation rows)")
+    parser.add_argument("--per-group", type=int, default=100, help="max rows per group (single/multi table)")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--allow-overlap", action="store_true",
-                        help="keep rows whose question text also appears in the first 5,500 rows")
-    parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
+                        help="keep rows whose question text also appears among the training questions")
+    parser.add_argument("--out-dir", default=None,
+                        help="default: outputs/in_distribution/<source> (so runs never overwrite each other)")
     parser.add_argument("--score-only", default=None, help="score a saved generated.json (no GPU, no dataset)")
     args = parser.parse_args()
-    out_dir = Path(args.out_dir)
+    out_dir = Path(args.out_dir) if args.out_dir else DEFAULT_OUT_DIR / args.source
 
     if args.score_only:
         with open(args.score_only, "r", encoding="utf-8") as f:
@@ -268,12 +310,27 @@ def main():
         from datasets import load_dataset
 
         ds = load_dataset(DATASET_NAME)["train"]
-        rows, info = select_rows(ds["question"], ds["context"], ds["answer"],
-                                 args.per_group, args.seed, TRAIN_ROWS, args.allow_overlap)
+        if args.source == "validation":
+            split = ds.select(range(TRAIN_ROWS)).train_test_split(test_size=VALIDATION_SIZE, seed=SPLIT_SEED)
+            train_part, val_part = split["train"], split["test"]
+            check_split_matches_training(train_part[0]["question"])
+            print("Split check passed: the rebuilt split starts with the notebook's first training example.")
+            rows, info = select_from_pool(val_part["question"], val_part["context"], val_part["answer"],
+                                          train_part["question"], args.per_group, args.seed,
+                                          args.allow_overlap, index_offset=0, source="validation")
+        else:
+            rows, info = select_rows(ds["question"], ds["context"], ds["answer"],
+                                     args.per_group, args.seed, TRAIN_ROWS, args.allow_overlap)
+        for group in ("single_table", "multi_table"):
+            if not any(r["group"] == group for r in rows):
+                message = f"No {group} rows available from source '{args.source}'. Selection info: {info}"
+                if args.source == "validation":
+                    raise SystemExit(message)
+                print("WARNING:", message)
         n_single = sum(1 for r in rows if r["group"] == "single_table")
         print(f"Selected {len(rows)} unseen rows ({n_single} single-table, {len(rows) - n_single} multi-table). {info}")
         meta = {"created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "dataset": DATASET_NAME, "train_rows_excluded": TRAIN_ROWS, "selection": info,
+                "dataset": DATASET_NAME, "source": args.source, "train_rows_excluded": TRAIN_ROWS, "selection": info,
                 "max_new_tokens": args.max_new_tokens, "package_versions": package_versions()}
         generate_all(rows, meta, out_dir, args.max_new_tokens)
 
