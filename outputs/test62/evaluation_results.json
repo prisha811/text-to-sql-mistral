@@ -1,0 +1,1873 @@
+{
+  "metadata": {
+    "evaluated_utc": "2026-10-22T19:22:58+00:00",
+    "input_file": "outputs/generated_sql_v2.json",
+    "database": "data/company_v2.db",
+    "query_timeout_seconds": 5,
+    "generation_metadata": {
+      "created_utc": "2026-10-22T19:09:21+00:00",
+      "base_model": "mistralai/Mistral-7B-v0.1",
+      "adapter_path": "/content/text-to-sql-mistral/models/adapter",
+      "quantization": "4-bit NF4, double quant, float16 compute",
+      "decoding": {
+        "do_sample": false,
+        "max_new_tokens": 256,
+        "stop_strings": [
+          "###"
+        ]
+      },
+      "database": "data/company_v2.db",
+      "schema_in_prompt": "CREATE TABLE departments (department_id INTEGER, department_name VARCHAR); CREATE TABLE employees (employee_id INTEGER, name VARCHAR, department_id INTEGER, salary INTEGER, experience INTEGER, hire_year INTEGER, city VARCHAR, manager_id INTEGER); CREATE TABLE projects (project_id INTEGER, project_name VARCHAR, department_id INTEGER, budget INTEGER, status VARCHAR); CREATE TABLE assignments (employee_id INTEGER, project_id INTEGER, hours INTEGER)",
+      "questions_source": "data/test_set.json",
+      "num_questions": 62,
+      "package_versions": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.20.2",
+        "peft": "0.21.2",
+        "bitsandbytes": "0.50.2",
+        "accelerate": "1.15.0"
+      },
+      "lora_layers_attached": 128
+    }
+  },
+  "summary": {
+    "num_questions": 62,
+    "num_scored": 62,
+    "num_bad_gold": 0,
+    "num_empty_gold": 0,
+    "models": {
+      "base": {
+        "execution_correct": 55,
+        "execution_accuracy": 0.8870967741935484,
+        "execution_ci95": [
+          0.7848003079004455,
+          0.9442220730866508
+        ],
+        "valid_sql": 61,
+        "valid_sql_rate": 0.9838709677419355,
+        "exact_match": 26,
+        "exact_match_n": 62,
+        "exact_match_rate": 0.41935483870967744,
+        "failure_types": {
+          "wrong_rows": 4,
+          "wrong_columns": 2,
+          "invalid_sql": 1
+        }
+      },
+      "finetuned": {
+        "execution_correct": 17,
+        "execution_accuracy": 0.27419354838709675,
+        "execution_ci95": [
+          0.17880918599092133,
+          0.39592775843327255
+        ],
+        "valid_sql": 53,
+        "valid_sql_rate": 0.8548387096774194,
+        "exact_match": 3,
+        "exact_match_n": 62,
+        "exact_match_rate": 0.04838709677419355,
+        "failure_types": {
+          "wrong_rows": 36,
+          "invalid_sql": 9
+        }
+      }
+    },
+    "paired": {
+      "both_correct": 15,
+      "only_base_correct": 40,
+      "only_finetuned_correct": 2,
+      "neither_correct": 5,
+      "sign_test_p": 4.1109160520136356e-10
+    },
+    "by_category": {
+      "aggregation": {
+        "n": 8,
+        "base": 6,
+        "finetuned": 2
+      },
+      "group_by": {
+        "n": 5,
+        "base": 5,
+        "finetuned": 1
+      },
+      "having": {
+        "n": 4,
+        "base": 4,
+        "finetuned": 1
+      },
+      "join": {
+        "n": 8,
+        "base": 6,
+        "finetuned": 4
+      },
+      "misc": {
+        "n": 7,
+        "base": 7,
+        "finetuned": 2
+      },
+      "multi_join": {
+        "n": 6,
+        "base": 6,
+        "finetuned": 2
+      },
+      "order_limit": {
+        "n": 4,
+        "base": 3,
+        "finetuned": 0
+      },
+      "self_join": {
+        "n": 2,
+        "base": 2,
+        "finetuned": 0
+      },
+      "simple": {
+        "n": 8,
+        "base": 7,
+        "finetuned": 0
+      },
+      "subquery": {
+        "n": 10,
+        "base": 9,
+        "finetuned": 5
+      }
+    }
+  },
+  "per_question": [
+    {
+      "id": 1,
+      "question": "List the names of all departments.",
+      "category": "simple",
+      "gold_sql": "SELECT department_name FROM departments",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Engineering'], ['Finance'], ['HR'], ['Legal'], ['Marketing']] ... (+2 more)",
+      "base": {
+        "sql": "SELECT department_name FROM departments",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering'], ['Finance'], ['HR'], ['Legal'], ['Marketing']] ... (+2 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT DISTINCT T1.department_name FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id JOIN projects AS T3 ON T1.department_id = T3.department_id JOIN assignments AS T4 ON T4.project_id = T3.project_id WHERE T4.hours > 100",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 2,
+      "question": "What is the name of the department with department_id 3?",
+      "category": "simple",
+      "gold_sql": "SELECT department_name FROM departments WHERE department_id = 3",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Marketing']]",
+      "base": {
+        "sql": "SELECT department_name FROM departments WHERE department_id = 3",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Marketing']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_name FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id JOIN projects AS T3 ON T1.department_id = T3.department_id WHERE T3.project_id = (SELECT project_id FROM projects WHERE project_name = 'Project 1' AND budget > 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: incomplete input",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 3,
+      "question": "List the names of employees who live in Pune.",
+      "category": "simple",
+      "gold_sql": "SELECT name FROM employees WHERE city = 'Pune'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Gaurav'], ['Kunal'], ['Manish'], ['Sara']] ... (+1 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE city = 'Pune'",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Gaurav'], ['Kunal'], ['Manish'], ['Sara']] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.city = 'Pune'",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T4.city",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 4,
+      "question": "Show the names of employees earning more than 90000.",
+      "category": "simple",
+      "gold_sql": "SELECT name FROM employees WHERE salary > 90000",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Kunal'], ['Manish'], ['Nikhil'], ['Sara']] ... (+2 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE salary > 90000",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Kunal'], ['Manish'], ['Nikhil'], ['Sara']] ... (+2 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Marketing' AND T3.budget > 100000",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Anil'], ['Anjali'], ['Arjun'], ['Kabir'], ['Varun']]"
+      }
+    },
+    {
+      "id": 5,
+      "question": "List the names of projects that are on hold.",
+      "category": "simple",
+      "gold_sql": "SELECT project_name FROM projects WHERE status = 'on_hold'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Falcon'], ['Iris']]",
+      "base": {
+        "sql": "SELECT project_name FROM projects WHERE status = 'on hold'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_name FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Marketing' AND T1.status = 'On Hold'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 6,
+      "question": "Show the names of employees with less than 3 years of experience.",
+      "category": "simple",
+      "gold_sql": "SELECT name FROM employees WHERE experience < 3",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Anjali'], ['Harsh'], ['Isha'], ['Pooja'], ['Varun']]",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE experience < 3",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Anjali'], ['Harsh'], ['Isha'], ['Pooja'], ['Varun']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T1.experience < 3",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Anjali'], ['Anjali'], ['Harsh'], ['Harsh'], ['Isha']] ... (+4 more)"
+      }
+    },
+    {
+      "id": 7,
+      "question": "Which projects have a budget of at least 150000? Return the project names.",
+      "category": "simple",
+      "gold_sql": "SELECT project_name FROM projects WHERE budget >= 150000",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Apollo'], ['Borealis'], ['Falcon'], ['Iris']]",
+      "base": {
+        "sql": "SELECT project_name FROM projects WHERE budget >= 150000",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Apollo'], ['Borealis'], ['Falcon'], ['Iris']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_name FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T1.budget >= 150000",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Apollo'], ['Apollo'], ['Apollo'], ['Apollo'], ['Apollo']] ... (+16 more)"
+      }
+    },
+    {
+      "id": 8,
+      "question": "List the names of employees who have no manager.",
+      "category": "simple",
+      "gold_sql": "SELECT name FROM employees WHERE manager_id IS NULL",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Harsh'], ['Ishita'], ['Kabir']] ... (+1 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE manager_id IS NULL",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Harsh'], ['Ishita'], ['Kabir']] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'No manager'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 9,
+      "question": "How many employees are there in total?",
+      "category": "aggregation",
+      "gold_sql": "SELECT COUNT(*) FROM employees",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[30]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM employees",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[30]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM employees",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[30]]"
+      }
+    },
+    {
+      "id": 10,
+      "question": "What is the average experience of all employees?",
+      "category": "aggregation",
+      "gold_sql": "SELECT AVG(experience) FROM employees",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[6.366666666666666]]",
+      "base": {
+        "sql": "SELECT AVG(experience) FROM employees",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[6.366666666666666]]"
+      },
+      "finetuned": {
+        "sql": "SELECT AVG(T2.experience) FROM employees AS T1 JOIN departments AS T2 ON T1.department_id = T2.department_id",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T2.experience",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 11,
+      "question": "What is the lowest salary?",
+      "category": "aggregation",
+      "gold_sql": "SELECT MIN(salary) FROM employees",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[48000]]",
+      "base": {
+        "sql": "SELECT salary FROM employees ORDER BY salary ASC LIMIT 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[48000]]"
+      },
+      "finetuned": {
+        "sql": "SELECT MIN(T1.salary) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T3.project_id = T2.project_id JOIN departments AS T4 ON T4.department_id = T3.department_id WHERE T3.budget > 1000000 AND T3.status = 'Active'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[None]]"
+      }
+    },
+    {
+      "id": 12,
+      "question": "What is the total budget of all projects?",
+      "category": "aggregation",
+      "gold_sql": "SELECT SUM(budget) FROM projects",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1360000]]",
+      "base": {
+        "sql": "SELECT SUM(budget) FROM projects",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1360000]]"
+      },
+      "finetuned": {
+        "sql": "SELECT SUM(T2.budget) FROM employees AS T1 JOIN projects AS T2 ON T1.department_id = T2.department_id JOIN assignments AS T3 ON T1.employee_id = T3.employee_id WHERE T3.hours > 100",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[None]]"
+      }
+    },
+    {
+      "id": 13,
+      "question": "How many projects are currently active?",
+      "category": "aggregation",
+      "gold_sql": "SELECT COUNT(*) FROM projects WHERE status = 'active'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[5]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM projects WHERE status = 'active'",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[5]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM projects WHERE budget > 0 AND status = 'Active'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[0]]"
+      }
+    },
+    {
+      "id": 14,
+      "question": "What is the highest salary among employees living in Mumbai?",
+      "category": "aggregation",
+      "gold_sql": "SELECT MAX(salary) FROM employees WHERE city = 'Mumbai'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[79000]]",
+      "base": {
+        "sql": "SELECT name, salary FROM employees WHERE city = 'Mumbai' ORDER BY salary DESC LIMIT 1",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_columns",
+        "error": null,
+        "rows_preview": "[['Rahul', 79000]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.city = 'Mumbai' ORDER BY T1.salary DESC LIMIT 1",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T4.city",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 15,
+      "question": "How many different cities do employees live in?",
+      "category": "aggregation",
+      "gold_sql": "SELECT COUNT(DISTINCT city) FROM employees",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[4]]",
+      "base": {
+        "sql": "SELECT DISTINCT city FROM employees",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Bangalore'], ['Delhi'], ['Mumbai'], ['Pune']]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(DISTINCT T1.city) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[4]]"
+      }
+    },
+    {
+      "id": 16,
+      "question": "What is the total number of hours logged across all assignments?",
+      "category": "aggregation",
+      "gold_sql": "SELECT SUM(hours) FROM assignments",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1431]]",
+      "base": {
+        "sql": "SELECT SUM(hours) FROM assignments",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1431]]"
+      },
+      "finetuned": {
+        "sql": "SELECT SUM(T3.hours) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = \"Marketing\"",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T3.hours",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 17,
+      "question": "Name the 3 highest-paid employees, highest first.",
+      "category": "order_limit",
+      "gold_sql": "SELECT name FROM employees ORDER BY salary DESC LIMIT 3",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Sara'], ['Tanvi'], ['Vikram']]",
+      "base": {
+        "sql": "SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 3",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_columns",
+        "error": null,
+        "rows_preview": "[['Sara', 105000], ['Tanvi', 115000], ['Vikram', 98000]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T3.budget > 1000000000 OR T3.status = 'Completed' ORDER BY T1.salary DESC LIMIT 3",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 18,
+      "question": "List the names of the 5 most experienced employees, most experienced first.",
+      "category": "order_limit",
+      "gold_sql": "SELECT name FROM employees ORDER BY experience DESC LIMIT 5",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Kabir'], ['Manish'], ['Sara'], ['Tanvi']]",
+      "base": {
+        "sql": "SELECT name FROM employees ORDER BY experience DESC LIMIT 5",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Kabir'], ['Manish'], ['Sara'], ['Tanvi']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T3.project_id = T2.project_id JOIN departments AS T4 ON T4.department_id = T3.department_id WHERE T4.department_name = 'Marketing' ORDER BY T1.experience DESC LIMIT 5",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Amit'], ['Diya'], ['Kabir'], ['Manish'], ['Tanvi']]"
+      }
+    },
+    {
+      "id": 19,
+      "question": "What is the name of the project with the largest budget?",
+      "category": "order_limit",
+      "gold_sql": "SELECT project_name FROM projects ORDER BY budget DESC LIMIT 1",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Apollo']]",
+      "base": {
+        "sql": "SELECT project_name FROM projects WHERE budget = (SELECT MAX(budget) FROM projects)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Apollo']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_name FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Marketing' ORDER BY T1.budget DESC LIMIT 1",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Borealis']]"
+      }
+    },
+    {
+      "id": 20,
+      "question": "Return the name and salary of the lowest-paid employee.",
+      "category": "order_limit",
+      "gold_sql": "SELECT name, salary FROM employees ORDER BY salary ASC LIMIT 1",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Harsh', 48000]]",
+      "base": {
+        "sql": "SELECT name, salary FROM employees ORDER BY salary ASC LIMIT 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Harsh', 48000]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name, T1.salary FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T3.budget = (SELECT MIN(budget) FROM projects) AND T3.status = 'Active'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 21,
+      "question": "For each city, return the city and the number of employees living there.",
+      "category": "group_by",
+      "gold_sql": "SELECT city, COUNT(*) FROM employees GROUP BY city",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Bangalore', 12], ['Delhi', 6], ['Mumbai', 6], ['Pune', 6]]",
+      "base": {
+        "sql": "SELECT city, COUNT(*) AS num_employees FROM employees GROUP BY city",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Bangalore', 12], ['Delhi', 6], ['Mumbai', 6], ['Pune', 6]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.city, COUNT(*) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id GROUP BY T1.city",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Bangalore', 20], ['Delhi', 12], ['Mumbai', 12], ['Pune', 12]]"
+      }
+    },
+    {
+      "id": 22,
+      "question": "For each project status, return the status and the number of projects.",
+      "category": "group_by",
+      "gold_sql": "SELECT status, COUNT(*) FROM projects GROUP BY status",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['active', 5], ['completed', 3], ['on_hold', 2]]",
+      "base": {
+        "sql": "SELECT status, COUNT(*) AS num_projects FROM projects GROUP BY status",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['active', 5], ['completed', 3], ['on_hold', 2]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.status, COUNT(*) FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id GROUP BY T1.status",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['active', 28], ['completed', 17], ['on_hold', 11]]"
+      }
+    },
+    {
+      "id": 23,
+      "question": "For each department_id, return the department_id and the average salary of its employees.",
+      "category": "group_by",
+      "gold_sql": "SELECT department_id, AVG(salary) FROM employees GROUP BY department_id",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1, 89888.88888888889], [2, 65333.333333333336], [3, 70600.0], [4, 81250.0], [5, 71833.33333333333]] ... (+1 more)",
+      "base": {
+        "sql": "SELECT department_id, AVG(salary) AS avg_salary FROM employees GROUP BY department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1, 89888.88888888889], [2, 65333.333333333336], [3, 70600.0], [4, 81250.0], [5, 71833.33333333333]] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_id, AVG(T2.salary) FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id GROUP BY T1.department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1, 89888.88888888889], [2, 65333.333333333336], [3, 70600.0], [4, 81250.0], [5, 71833.33333333333]] ... (+1 more)"
+      }
+    },
+    {
+      "id": 24,
+      "question": "For each department_id, return the department_id and the total budget of its projects.",
+      "category": "group_by",
+      "gold_sql": "SELECT department_id, SUM(budget) FROM projects GROUP BY department_id",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1, 750000], [2, 40000], [3, 210000], [4, 90000], [5, 200000]] ... (+1 more)",
+      "base": {
+        "sql": "SELECT department_id, SUM(budget) AS total_budget FROM projects GROUP BY department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1, 750000], [2, 40000], [3, 210000], [4, 90000], [5, 200000]] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_id, SUM(T3.budget) FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id JOIN projects AS T3 ON T1.department_id = T3.department_id GROUP BY T1.department_id",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[1, 6750000], [2, 120000], [3, 1050000], [4, 360000], [5, 1200000]] ... (+1 more)"
+      }
+    },
+    {
+      "id": 25,
+      "question": "For each project_id, return the project_id and the total hours assigned to it.",
+      "category": "group_by",
+      "gold_sql": "SELECT project_id, SUM(hours) FROM assignments GROUP BY project_id",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1, 94], [10, 152], [2, 101], [3, 168], [4, 182]] ... (+5 more)",
+      "base": {
+        "sql": "SELECT project_id, SUM(hours) AS total_hours FROM assignments GROUP BY project_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1, 94], [10, 152], [2, 101], [3, 168], [4, 182]] ... (+5 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_id, SUM(T3.hours) FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id GROUP BY T1.project_id",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T3.hours",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 26,
+      "question": "Which cities have more than 7 employees? Return the city names.",
+      "category": "having",
+      "gold_sql": "SELECT city FROM employees GROUP BY city HAVING COUNT(*) > 7",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Bangalore']]",
+      "base": {
+        "sql": "SELECT city FROM employees GROUP BY city HAVING COUNT(*) > 7",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Bangalore']]"
+      },
+      "finetuned": {
+        "sql": "SELECT DISTINCT T1.city FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Sales' GROUP BY T1.city HAVING COUNT(*) > 7",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 27,
+      "question": "Return the department_ids whose average salary is above 85000.",
+      "category": "having",
+      "gold_sql": "SELECT department_id FROM employees GROUP BY department_id HAVING AVG(salary) > 85000",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1]]",
+      "base": {
+        "sql": "SELECT department_id FROM departments WHERE department_id IN (SELECT department_id FROM (SELECT department_id, AVG(salary) AS avg_salary FROM employees GROUP BY department_id) AS t WHERE avg_salary > 85000)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_id FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id WHERE T2.salary > (SELECT AVG(salary) FROM employees)",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[1], [1], [1], [1], [1]] ... (+8 more)"
+      }
+    },
+    {
+      "id": 28,
+      "question": "Which project_ids have more than 5 employees assigned? Return the project_ids.",
+      "category": "having",
+      "gold_sql": "SELECT project_id FROM assignments GROUP BY project_id HAVING COUNT(*) > 5",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[10], [3], [4], [5], [7]] ... (+1 more)",
+      "base": {
+        "sql": "SELECT project_id FROM assignments GROUP BY project_id HAVING COUNT(employee_id) > 5",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[10], [3], [4], [5], [7]] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_id FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id WHERE T3.name IN (SELECT T4.name FROM employees AS T4 JOIN assignments AS T5 ON T4.employee_id = T5.employee_id JOIN projects AS T6 ON T5.project_id = T6.project_id WHERE T6.project_id = T1.project_id GROUP BY T6.project_id HAVING COUNT(*) > 5)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[10], [3], [4], [5], [7]] ... (+1 more)"
+      }
+    },
+    {
+      "id": 29,
+      "question": "Return the department_ids that have at least 2 projects.",
+      "category": "having",
+      "gold_sql": "SELECT department_id FROM projects GROUP BY department_id HAVING COUNT(*) >= 2",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[1], [3], [5]]",
+      "base": {
+        "sql": "SELECT department_id FROM departments WHERE department_id IN (SELECT department_id FROM projects GROUP BY department_id HAVING COUNT(project_id) >= 2)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[1], [3], [5]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_id FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id JOIN projects AS T3 ON T1.department_id = T3.department_id GROUP BY T1.department_id HAVING COUNT(*) >= 2",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[1], [2], [3], [4], [5]] ... (+1 more)"
+      }
+    },
+    {
+      "id": 30,
+      "question": "List each employee's name together with the name of their department.",
+      "category": "join",
+      "gold_sql": "SELECT e.name, d.department_name FROM employees e JOIN departments d ON e.department_id = d.department_id",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav', 'Engineering'], ['Amit', 'Sales'], ['Anil', 'HR'], ['Anjali', 'Sales'], ['Arjun', 'HR']] ... (+25 more)",
+      "base": {
+        "sql": "SELECT employees.name, departments.department_name FROM employees JOIN departments ON employees.department_id = departments.department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav', 'Engineering'], ['Amit', 'Sales'], ['Anil', 'HR'], ['Anjali', 'Sales'], ['Arjun', 'HR']] ... (+25 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name, T2.department_name FROM employees AS T1 JOIN departments AS T2 ON T1.department_id = T2.department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav', 'Engineering'], ['Amit', 'Sales'], ['Anil', 'HR'], ['Anjali', 'Sales'], ['Arjun', 'HR']] ... (+25 more)"
+      }
+    },
+    {
+      "id": 31,
+      "question": "List the names of employees who work in the Engineering department.",
+      "category": "join",
+      "gold_sql": "SELECT e.name FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name = 'Engineering'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Diya'], ['Kunal'], ['Neha'], ['Pooja']] ... (+4 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE department_id = 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Diya'], ['Kunal'], ['Neha'], ['Pooja']] ... (+4 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Engineering'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Amit'], ['Arjun'], ['Diya'], ['Harsh'], ['Isha']] ... (+11 more)"
+      }
+    },
+    {
+      "id": 32,
+      "question": "Return the names of the projects that belong to the Marketing department.",
+      "category": "join",
+      "gold_sql": "SELECT p.project_name FROM projects p JOIN departments d ON p.department_id = d.department_id WHERE d.department_name = 'Marketing'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Falcon'], ['Granite']]",
+      "base": {
+        "sql": "SELECT name FROM projects WHERE department_id = (SELECT department_id FROM departments WHERE department_name = 'Marketing')",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: name",
+        "rows_preview": null
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_name FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Marketing'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Borealis'], ['Cobalt'], ['Cobalt'], ['Cobalt'], ['Ember']] ... (+6 more)"
+      }
+    },
+    {
+      "id": 33,
+      "question": "What is the average salary of employees in the Sales department?",
+      "category": "join",
+      "gold_sql": "SELECT AVG(e.salary) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name = 'Sales'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[71833.33333333333]]",
+      "base": {
+        "sql": "SELECT AVG(salary) FROM employees WHERE department_id = 1",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[89888.88888888889]]"
+      },
+      "finetuned": {
+        "sql": "SELECT AVG(T1.salary) FROM employees AS T1 JOIN departments AS T2 ON T1.department_id = T2.department_id WHERE T2.department_name = 'Sales'",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[71833.33333333333]]"
+      }
+    },
+    {
+      "id": 34,
+      "question": "How many employees work in the Finance or HR departments?",
+      "category": "join",
+      "gold_sql": "SELECT COUNT(*) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name IN ('Finance', 'HR')",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[7]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE department_id IN (SELECT department_id FROM departments WHERE department_name IN ('Finance', 'HR'))",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[7]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Finance' OR T4.department_name = 'HR'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[12]]"
+      }
+    },
+    {
+      "id": 35,
+      "question": "For each department name, return the department name and its number of employees.",
+      "category": "join",
+      "gold_sql": "SELECT d.department_name, COUNT(e.employee_id) FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_name",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Engineering', 9], ['Finance', 4], ['HR', 3], ['Marketing', 5], ['Sales', 6]] ... (+1 more)",
+      "base": {
+        "sql": "SELECT department_name, COUNT(employee_id) AS num_employees FROM departments JOIN employees ON departments.department_id = employees.department_id GROUP BY department_name",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering', 9], ['Finance', 4], ['HR', 3], ['Marketing', 5], ['Sales', 6]] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_name, COUNT(*) FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id GROUP BY T1.department_name",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering', 9], ['Finance', 4], ['HR', 3], ['Marketing', 5], ['Sales', 6]] ... (+1 more)"
+      }
+    },
+    {
+      "id": 36,
+      "question": "Return each department name with the total salary of its employees.",
+      "category": "join",
+      "gold_sql": "SELECT d.department_name, SUM(e.salary) FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_name",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Engineering', 809000], ['Finance', 325000], ['HR', 196000], ['Marketing', 353000], ['Sales', 431000]] ... (+1 more)",
+      "base": {
+        "sql": "SELECT department_name, SUM(salary) AS total_salary FROM employees JOIN departments ON employees.department_id = departments.department_id GROUP BY department_name",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering', 809000], ['Finance', 325000], ['HR', 196000], ['Marketing', 353000], ['Sales', 431000]] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT SUM(T2.salary), T1.department_name FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id GROUP BY T1.department_name",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[166000, 'Support'], [196000, 'HR'], [325000, 'Finance'], [353000, 'Marketing'], [431000, 'Sales']] ... (+1 more)"
+      }
+    },
+    {
+      "id": 37,
+      "question": "List the names of departments that have no employees.",
+      "category": "join",
+      "gold_sql": "SELECT d.department_name FROM departments d LEFT JOIN employees e ON e.department_id = d.department_id WHERE e.employee_id IS NULL",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Legal']]",
+      "base": {
+        "sql": "SELECT department_name FROM departments WHERE department_id NOT IN (SELECT department_id FROM employees)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Legal']]"
+      },
+      "finetuned": {
+        "sql": "SELECT department_name FROM departments EXCEPT SELECT T1.department_name FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Legal']]"
+      }
+    },
+    {
+      "id": 38,
+      "question": "List the names of employees assigned to the project named Apollo.",
+      "category": "multi_join",
+      "gold_sql": "SELECT e.name FROM employees e JOIN assignments a ON a.employee_id = e.employee_id JOIN projects p ON a.project_id = p.project_id WHERE p.project_name = 'Apollo'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Amit'], ['Diya'], ['Neha'], ['Ritu'], ['Tanvi']]",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE employee_id IN (SELECT employee_id FROM assignments WHERE project_id = (SELECT project_id FROM projects WHERE project_name = 'Apollo'))",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Amit'], ['Diya'], ['Neha'], ['Ritu'], ['Tanvi']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id WHERE T3.project_name = 'Apollo'",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Amit'], ['Diya'], ['Neha'], ['Ritu'], ['Tanvi']]"
+      }
+    },
+    {
+      "id": 39,
+      "question": "For each project name, return the project name and the number of employees assigned to it.",
+      "category": "multi_join",
+      "gold_sql": "SELECT p.project_name, COUNT(a.employee_id) FROM projects p JOIN assignments a ON a.project_id = p.project_id GROUP BY p.project_name",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Apollo', 5], ['Borealis', 5], ['Cobalt', 6], ['Delta', 6], ['Ember', 6]] ... (+5 more)",
+      "base": {
+        "sql": "SELECT project_name, COUNT(employee_id) AS num_employees FROM projects JOIN assignments ON projects.project_id = assignments.project_id GROUP BY project_name",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Apollo', 5], ['Borealis', 5], ['Cobalt', 6], ['Delta', 6], ['Ember', 6]] ... (+5 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_name, COUNT(*) FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id GROUP BY T1.project_name",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Apollo', 5], ['Borealis', 5], ['Cobalt', 6], ['Delta', 6], ['Ember', 6]] ... (+5 more)"
+      }
+    },
+    {
+      "id": 40,
+      "question": "What is the total number of hours worked by the employee named Aarav?",
+      "category": "multi_join",
+      "gold_sql": "SELECT SUM(a.hours) FROM assignments a JOIN employees e ON a.employee_id = e.employee_id WHERE e.name = 'Aarav'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[53]]",
+      "base": {
+        "sql": "SELECT SUM(hours) FROM assignments WHERE employee_id = (SELECT employee_id FROM employees WHERE name = 'Aarav')",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[53]]"
+      },
+      "finetuned": {
+        "sql": "SELECT SUM(T3.hours) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id WHERE T1.name = \"Aarav\"",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T3.hours",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 41,
+      "question": "Return the distinct names of employees who work on active projects.",
+      "category": "multi_join",
+      "gold_sql": "SELECT DISTINCT e.name FROM employees e JOIN assignments a ON a.employee_id = e.employee_id JOIN projects p ON a.project_id = p.project_id WHERE p.status = 'active'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Anjali'], ['Divya'], ['Diya']] ... (+17 more)",
+      "base": {
+        "sql": "SELECT DISTINCT name FROM employees WHERE employee_id IN (SELECT employee_id FROM assignments WHERE project_id IN (SELECT project_id FROM projects WHERE status = 'active'))",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Anjali'], ['Divya'], ['Diya']] ... (+17 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT DISTINCT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id WHERE T3.status = 'Active'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 42,
+      "question": "For each department name, return the department name and the total hours logged by its employees.",
+      "category": "multi_join",
+      "gold_sql": "SELECT d.department_name, SUM(a.hours) FROM departments d JOIN employees e ON e.department_id = d.department_id JOIN assignments a ON a.employee_id = e.employee_id GROUP BY d.department_name",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Engineering', 432], ['Finance', 238], ['HR', 91], ['Marketing', 314], ['Sales', 283]] ... (+1 more)",
+      "base": {
+        "sql": "SELECT department_name, SUM(hours) AS total_hours FROM departments JOIN employees ON departments.department_id = employees.department_id JOIN assignments ON employees.employee_id = assignments.employee_id GROUP BY department_name",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering', 432], ['Finance', 238], ['HR', 91], ['Marketing', 314], ['Sales', 283]] ... (+1 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_name, SUM(T4.hours) FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id JOIN projects AS T3 ON T1.department_id = T3.department_id JOIN assignments AS T4 ON T2.employee_id = T4.employee_id GROUP BY T1.department_name",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Engineering', 1296], ['Finance', 238], ['HR', 91], ['Marketing', 628], ['Sales', 566]] ... (+1 more)"
+      }
+    },
+    {
+      "id": 43,
+      "question": "List the distinct names of employees who work on a project that belongs to a different department than their own.",
+      "category": "multi_join",
+      "gold_sql": "SELECT DISTINCT e.name FROM employees e JOIN assignments a ON a.employee_id = e.employee_id JOIN projects p ON a.project_id = p.project_id WHERE p.department_id <> e.department_id",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Anil'], ['Anjali'], ['Arjun']] ... (+20 more)",
+      "base": {
+        "sql": "SELECT DISTINCT employees.name FROM employees JOIN assignments ON employees.employee_id = assignments.employee_id JOIN projects ON assignments.project_id = projects.project_id WHERE projects.department_id != employees.department_id",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Anil'], ['Anjali'], ['Arjun']] ... (+20 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT DISTINCT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name <> T1.department_id",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Anil'], ['Anjali'], ['Arjun']] ... (+23 more)"
+      }
+    },
+    {
+      "id": 44,
+      "question": "List the names of employees who earn more than the average salary.",
+      "category": "subquery",
+      "gold_sql": "SELECT name FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Diya'], ['Kabir'], ['Kunal']] ... (+8 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Diya'], ['Kabir'], ['Kunal']] ... (+8 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Marketing' AND T1.salary > (SELECT AVG(salary) FROM employees)",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Amit'], ['Diya'], ['Kabir'], ['Manish'], ['Tanvi']]"
+      }
+    },
+    {
+      "id": 45,
+      "question": "What is the name of the employee with the highest salary?",
+      "category": "subquery",
+      "gold_sql": "SELECT name FROM employees WHERE salary = (SELECT MAX(salary) FROM employees)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Tanvi']]",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE salary = (SELECT MAX(salary) FROM employees)",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Tanvi']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.department_name = 'Marketing' ORDER BY T1.salary DESC LIMIT 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Tanvi']]"
+      }
+    },
+    {
+      "id": 46,
+      "question": "List the names of employees who are not assigned to any project.",
+      "category": "subquery",
+      "gold_sql": "SELECT name FROM employees WHERE employee_id NOT IN (SELECT employee_id FROM assignments)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Swati'], ['Yash']]",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE employee_id NOT IN (SELECT employee_id FROM assignments)",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Swati'], ['Yash']]"
+      },
+      "finetuned": {
+        "sql": "SELECT name FROM employees WHERE NOT employee_id IN (SELECT T1.employee_id FROM assignments AS T1 JOIN projects AS T2 ON T1.project_id = T2.project_id)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Swati'], ['Yash']]"
+      }
+    },
+    {
+      "id": 47,
+      "question": "List the names of departments that have no projects.",
+      "category": "subquery",
+      "gold_sql": "SELECT department_name FROM departments WHERE department_id NOT IN (SELECT department_id FROM projects)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Legal']]",
+      "base": {
+        "sql": "SELECT department_name FROM departments WHERE department_id NOT IN (SELECT department_id FROM projects)",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Legal']]"
+      },
+      "finetuned": {
+        "sql": "SELECT department_name FROM departments EXCEPT SELECT T1.department_name FROM departments AS T1 JOIN projects AS T2 ON T1.department_id = T2.department_id WHERE T2.budget > 10000000",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Engineering'], ['Finance'], ['HR'], ['Legal'], ['Marketing']] ... (+2 more)"
+      }
+    },
+    {
+      "id": 48,
+      "question": "List the names of projects whose budget is above the average project budget.",
+      "category": "subquery",
+      "gold_sql": "SELECT project_name FROM projects WHERE budget > (SELECT AVG(budget) FROM projects)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Apollo'], ['Borealis'], ['Falcon'], ['Iris']]",
+      "base": {
+        "sql": "SELECT project_name FROM projects WHERE budget > (SELECT AVG(budget) FROM projects)",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Apollo'], ['Borealis'], ['Falcon'], ['Iris']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.project_name FROM projects AS T1 JOIN assignments AS T2 ON T1.project_id = T2.project_id JOIN employees AS T3 ON T2.employee_id = T3.employee_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T1.budget > (SELECT AVG(budget) FROM projects)",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Apollo'], ['Apollo'], ['Apollo'], ['Apollo'], ['Apollo']] ... (+16 more)"
+      }
+    },
+    {
+      "id": 49,
+      "question": "List the names of employees whose salary is higher than the average salary of their own department.",
+      "category": "subquery",
+      "gold_sql": "SELECT name FROM employees e WHERE salary > (SELECT AVG(salary) FROM employees WHERE department_id = e.department_id)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Anil'], ['Ishita'], ['Kabir']] ... (+11 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE salary > (SELECT AVG(salary) FROM employees WHERE department_id = employees.department_id)",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Diya'], ['Kabir'], ['Kunal']] ... (+8 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.salary > (SELECT AVG(salary) FROM employees WHERE department_id = T3.department_id)",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T4.salary",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 50,
+      "question": "What is the name of the department that has the most employees?",
+      "category": "subquery",
+      "gold_sql": "SELECT d.department_name FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_id ORDER BY COUNT(*) DESC LIMIT 1",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Engineering']]",
+      "base": {
+        "sql": "SELECT department_name FROM departments WHERE department_id IN (SELECT department_id FROM employees GROUP BY department_id ORDER BY COUNT(*) DESC LIMIT 1)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_name FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id GROUP BY T1.department_name ORDER BY COUNT(*) DESC LIMIT 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering']]"
+      }
+    },
+    {
+      "id": 51,
+      "question": "List the names of employees who work on more than one project.",
+      "category": "subquery",
+      "gold_sql": "SELECT name FROM employees WHERE employee_id IN (SELECT employee_id FROM assignments GROUP BY employee_id HAVING COUNT(*) > 1)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Anjali'], ['Arjun'], ['Diya']] ... (+14 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE employee_id IN (SELECT employee_id FROM assignments GROUP BY employee_id HAVING COUNT(project_id) > 1)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Anjali'], ['Arjun'], ['Diya']] ... (+14 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id GROUP BY T1.name HAVING COUNT(*) > 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Anjali'], ['Arjun'], ['Diya']] ... (+14 more)"
+      }
+    },
+    {
+      "id": 52,
+      "question": "How many employees earn more than the average salary of the Engineering department?",
+      "category": "subquery",
+      "gold_sql": "SELECT COUNT(*) FROM employees WHERE salary > (SELECT AVG(e.salary) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name = 'Engineering')",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[7]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE salary > (SELECT AVG(salary) FROM employees WHERE department_id = 1)",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[7]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE salary > (SELECT AVG(salary) FROM employees WHERE department_id = (SELECT department_id FROM departments WHERE department_name = 'Engineering'))",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[7]]"
+      }
+    },
+    {
+      "id": 53,
+      "question": "What is the second highest salary?",
+      "category": "subquery",
+      "gold_sql": "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[105000]]",
+      "base": {
+        "sql": "SELECT salary FROM employees ORDER BY salary DESC LIMIT 1, 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[105000]]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.salary FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T3.project_id = T2.project_id JOIN departments AS T4 ON T4.department_id = T3.department_id WHERE T3.budget > 1000000000 AND T3.status = 'Active' ORDER BY T1.salary DESC LIMIT 1, 1",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[]"
+      }
+    },
+    {
+      "id": 54,
+      "question": "List each employee's name with their manager's name, only for employees who have a manager.",
+      "category": "self_join",
+      "gold_sql": "SELECT e.name, m.name FROM employees e JOIN employees m ON e.manager_id = m.employee_id",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Anil', 'Rohan'], ['Anjali', 'Amit'], ['Arjun', 'Rohan'], ['Divya', 'Ishita'], ['Diya', 'Aarav']] ... (+19 more)",
+      "base": {
+        "sql": "SELECT e.name, m.name FROM employees e JOIN employees m ON e.manager_id = m.employee_id WHERE e.manager_id IS NOT NULL",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Anil', 'Rohan'], ['Anjali', 'Amit'], ['Arjun', 'Rohan'], ['Divya', 'Ishita'], ['Diya', 'Aarav']] ... (+19 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name, T2.name FROM employees AS T1 JOIN employees AS T2 ON T1.manager_id = T2.employee_id WHERE T1.salary > T2.salary",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Anil', 'Rohan'], ['Manish', 'Amit'], ['Meera', 'Ishita'], ['Nikhil', 'Kabir'], ['Sara', 'Aarav']] ... (+5 more)"
+      }
+    },
+    {
+      "id": 55,
+      "question": "How many employees report directly to the employee with employee_id 1?",
+      "category": "self_join",
+      "gold_sql": "SELECT COUNT(*) FROM employees WHERE manager_id = 1",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[8]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE manager_id = 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[8]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T1.manager_id = 1",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[16]]"
+      }
+    },
+    {
+      "id": 56,
+      "question": "How many employees have between 5 and 10 years of experience, inclusive?",
+      "category": "misc",
+      "gold_sql": "SELECT COUNT(*) FROM employees WHERE experience BETWEEN 5 AND 10",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[14]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE experience BETWEEN 5 AND 10",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[14]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE experience BETWEEN 5 AND 10",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[14]]"
+      }
+    },
+    {
+      "id": 57,
+      "question": "List the names of employees whose name starts with the letter A.",
+      "category": "misc",
+      "gold_sql": "SELECT name FROM employees WHERE name LIKE 'A%'",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Aarav'], ['Amit'], ['Anil'], ['Anjali'], ['Arjun']]",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE name LIKE 'A%'",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Amit'], ['Anil'], ['Anjali'], ['Arjun']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T1.name LIKE 'A%'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Aarav'], ['Aarav'], ['Amit'], ['Amit'], ['Anil']] ... (+4 more)"
+      }
+    },
+    {
+      "id": 58,
+      "question": "What is the average salary of employees with more than 5 years of experience?",
+      "category": "misc",
+      "gold_sql": "SELECT AVG(salary) FROM employees WHERE experience > 5",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[87437.5]]",
+      "base": {
+        "sql": "SELECT AVG(salary) FROM employees WHERE experience > 5",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[87437.5]]"
+      },
+      "finetuned": {
+        "sql": "SELECT AVG(T1.salary) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T3.project_id = T2.project_id JOIN departments AS T4 ON T4.department_id = T3.department_id WHERE T1.experience > 5",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[88647.05882352941]]"
+      }
+    },
+    {
+      "id": 59,
+      "question": "List the names of employees who were hired after 2020.",
+      "category": "misc",
+      "gold_sql": "SELECT name FROM employees WHERE hire_year > 2020",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Diya'], ['Gaurav'], ['Ishita'], ['Meera'], ['Nikhil']] ... (+3 more)",
+      "base": {
+        "sql": "SELECT name FROM employees WHERE hire_year > 2020",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Diya'], ['Gaurav'], ['Ishita'], ['Meera'], ['Nikhil']] ... (+3 more)"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.name FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T2.project_id = T3.project_id JOIN departments AS T4 ON T3.department_id = T4.department_id WHERE T4.hire_year > 2020",
+        "valid": false,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "invalid_sql",
+        "error": "OperationalError: no such column: T4.hire_year",
+        "rows_preview": null
+      }
+    },
+    {
+      "id": 60,
+      "question": "How many employees were hired in 2018?",
+      "category": "misc",
+      "gold_sql": "SELECT COUNT(*) FROM employees WHERE hire_year = 2018",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[2]]",
+      "base": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE hire_year = 2018",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[2]]"
+      },
+      "finetuned": {
+        "sql": "SELECT COUNT(*) FROM employees WHERE hire_year = 2018",
+        "valid": true,
+        "correct": true,
+        "exact_match": true,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[2]]"
+      }
+    },
+    {
+      "id": 61,
+      "question": "What is the earliest hire year among all employees?",
+      "category": "misc",
+      "gold_sql": "SELECT MIN(hire_year) FROM employees",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[[2010]]",
+      "base": {
+        "sql": "SELECT hire_year FROM employees ORDER BY hire_year ASC LIMIT 1",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[[2010]]"
+      },
+      "finetuned": {
+        "sql": "SELECT MIN(T1.hire_year) FROM employees AS T1 JOIN assignments AS T2 ON T1.employee_id = T2.employee_id JOIN projects AS T3 ON T3.project_id = T2.project_id JOIN departments AS T4 ON T4.department_id = T3.department_id WHERE T3.status = 'Active'",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[[None]]"
+      }
+    },
+    {
+      "id": 62,
+      "question": "Return the names of departments whose employees' total salary exceeds 300000.",
+      "category": "misc",
+      "gold_sql": "SELECT d.department_name FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_name HAVING SUM(e.salary) > 300000",
+      "gold_ok": true,
+      "gold_error": null,
+      "gold_empty": false,
+      "gold_rows_preview": "[['Engineering'], ['Finance'], ['Marketing'], ['Sales']]",
+      "base": {
+        "sql": "SELECT department_name FROM departments JOIN employees ON departments.department_id = employees.department_id GROUP BY department_name HAVING SUM(salary) > 300000",
+        "valid": true,
+        "correct": true,
+        "exact_match": false,
+        "failure_type": "ok",
+        "error": null,
+        "rows_preview": "[['Engineering'], ['Finance'], ['Marketing'], ['Sales']]"
+      },
+      "finetuned": {
+        "sql": "SELECT T1.department_name FROM departments AS T1 JOIN employees AS T2 ON T1.department_id = T2.department_id JOIN projects AS T3 ON T1.department_id = T3.department_id JOIN assignments AS T4 ON T4.employee_id = T2.employee_id WHERE T4.project_id = T3.project_id AND T2.salary + T3.budget * T4.hours > 300000",
+        "valid": true,
+        "correct": false,
+        "exact_match": false,
+        "failure_type": "wrong_rows",
+        "error": null,
+        "rows_preview": "[['Engineering'], ['Engineering'], ['Engineering'], ['Engineering'], ['Engineering']] ... (+7 more)"
+      }
+    }
+  ]
+}
