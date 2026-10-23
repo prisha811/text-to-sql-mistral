@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from augment import sql_compiles  # noqa: E402
 from prompts import build_prompt, build_training_text  # noqa: E402
-from train_qlora import build_training_rows  # noqa: E402
+from train_qlora import ListDataset, build_training_rows, tokenize_rows  # noqa: E402
 
 CONTEXTS = [
     "CREATE TABLE department (creation VARCHAR, department_id VARCHAR); CREATE TABLE management (department_id VARCHAR, head_id VARCHAR); CREATE TABLE head (head_id VARCHAR, born_state VARCHAR)",
@@ -46,10 +46,18 @@ class FakePart:
 
 class LongTokenizer:
     """Pretends every text is far too long."""
+    eos_token_id = 2
+
     def __call__(self, text):
-        class Out:
-            input_ids = list(range(5000))
-        return Out()
+        return {"input_ids": list(range(5000))}
+
+
+class WordTokenizer:
+    """Tiny stand-in for the Mistral tokenizer: BOS (id 1) + one id per word. EOS id is 2."""
+    eos_token_id = 2
+
+    def __call__(self, text):
+        return {"input_ids": [1] + [10 + len(word) for word in text.split()]}
 
 
 def test_v1_rows_are_the_plain_training_text():
@@ -86,6 +94,26 @@ def test_rows_that_would_be_truncated_fall_back_to_the_original_schema():
     assert stats["status_counts"].get("augmented", 0) == 0
     originals = FakePart(200).rows
     assert all(r["context"] == o["context"] for r, o in zip(rows, originals))
+
+
+def test_tokenization_matches_what_sfttrainer_did():
+    rows = [{"text": "alpha beta gamma"}]
+    item = tokenize_rows(rows, WordTokenizer(), max_length=1024)[0]
+    assert item["input_ids"][0] == 1                       # BOS comes from the tokenizer
+    assert item["input_ids"][-1] == 2                      # EOS appended
+    assert item["labels"] == item["input_ids"]             # loss on every token, as in the notebook
+    assert item["attention_mask"] == [1] * len(item["input_ids"])
+
+
+def test_tokenization_truncates_to_max_length():
+    long_text = " ".join(["word"] * 50)
+    item = tokenize_rows([{"text": long_text}], WordTokenizer(), max_length=16)[0]
+    assert len(item["input_ids"]) == 16 == len(item["labels"]) == len(item["attention_mask"])
+
+
+def test_list_dataset_behaves_like_a_map_style_dataset():
+    ds = ListDataset([{"input_ids": [1]}, {"input_ids": [2]}])
+    assert len(ds) == 2 and ds[1] == {"input_ids": [2]}
 
 
 if __name__ == "__main__":
