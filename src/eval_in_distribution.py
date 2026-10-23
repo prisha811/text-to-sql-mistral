@@ -33,9 +33,16 @@ What it measures (no table contents exist for these rows, so no result compariso
                     company database. On single-table rows there is almost nothing to join, so
                     this number only means something on multi-table rows.
 
+Distractor test (--distractor-tables N --distractor-cols M): before the models see a row, N unneeded
+tables and M unneeded columns (borrowed from OTHER rows of the same pool) are added to its schema. The
+gold SQL still holds, because it never uses them. The script then reports how often each model's SQL
+mentions an added table or column. This reproduces the company-database failure ("uses tables it
+does not need") on validation rows instead of on the test set. Use --adapter to test another adapter.
+
 Usage (GPU needed for generation, from the repo root):
     python src/eval_in_distribution.py --per-group 5          # smoke test
     python src/eval_in_distribution.py                        # up to 100 single + 100 multi-table rows
+    python src/eval_in_distribution.py --distractor-tables 2 --distractor-cols 2 --per-group 50
     python src/eval_in_distribution.py --score-only outputs/in_distribution/validation/generated.json
                                                               # re-score a saved file (no GPU/dataset)
 """
@@ -54,6 +61,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from augment import Augmenter  # noqa: E402
 from evaluate import normalize_sql_text, wilson_interval  # noqa: E402
 from generate_sql import extract_sql, generate_one, package_versions  # noqa: E402
 from prompts import build_prompt  # noqa: E402
@@ -162,8 +170,15 @@ def score_row(row, model):
     valid, error = check_sql_valid(row["context"], sql)
     exact = bool(sql) and normalize_sql_text(sql) == normalize_sql_text(row["gold_sql"])
     joins, gold_joins = count_joins(sql), count_joins(row["gold_sql"])
+    uses_table = any(re.search(rf"\b{re.escape(t)}\b", sql, re.IGNORECASE) for t in row.get("added_tables") or [])
+    uses_column = any(re.search(rf"\b{re.escape(c)}\b", sql, re.IGNORECASE) for c in row.get("added_columns") or [])
     return {"valid": valid, "error": error, "exact_match": exact,
-            "joins": joins, "gold_joins": gold_joins, "more_joins_than_gold": joins > gold_joins}
+            "joins": joins, "gold_joins": gold_joins, "more_joins_than_gold": joins > gold_joins,
+            "uses_distractor_table": uses_table, "uses_distractor_column": uses_column}
+
+
+def has_distractors(rows):
+    return any(r.get("added_tables") or r.get("added_columns") for r in rows)
 
 
 def summarise(rows):
@@ -177,7 +192,9 @@ def summarise(rows):
             n = len(subset)
             entry = {"n": n}
             for key, field in (("valid_sql", "valid"), ("exact_match", "exact_match"),
-                               ("more_joins_than_gold", "more_joins_than_gold")):
+                               ("more_joins_than_gold", "more_joins_than_gold"),
+                               ("uses_distractor_table", "uses_distractor_table"),
+                               ("uses_distractor_column", "uses_distractor_column")):
                 k = sum(1 for s in subset if s[field])
                 entry[key] = {"k": k, "rate": k / n if n else None, "ci95": wilson_interval(k, n)}
             summary[model][group] = entry
@@ -194,7 +211,7 @@ def cell(entry):
     return f"{entry['k']}/{entry['n_rows']} ({pct(entry['rate'])}, CI {pct(lo)}-{pct(hi)})"
 
 
-def print_summary(summary):
+def print_summary(summary, with_distractors=False):
     print("\n" + "=" * 112)
     print("IN-DISTRIBUTION CHECK (rows the adapter never saw)")
     print("=" * 112)
@@ -203,21 +220,36 @@ def print_summary(summary):
         if summary[MODELS[0]][group]["n"] == 0:
             print("  (no rows in this group)")
             continue
-        print(f"  {'Model':<20} {'Valid SQL':<34} {'Exact match (favours fine-tuned)':<38} {'More JOINs than gold'}")
+        keys = ["valid_sql", "exact_match", "more_joins_than_gold"]
+        titles = ["Valid SQL", "Exact match (favours fine-tuned)", "More JOINs than gold"]
+        widths = [34, 38, 34]
+        if with_distractors:
+            keys += ["uses_distractor_table", "uses_distractor_column"]
+            titles += ["Uses an added (unneeded) TABLE", "Uses an added (unneeded) COLUMN"]
+            widths += [34, 34]
+        print("  " + f"{'Model':<20} " + " ".join(f"{t:<{w}}" for t, w in zip(titles, widths)))
         for model in MODELS:
             e = summary[model][group]
-            parts = []
-            for key in ("valid_sql", "exact_match", "more_joins_than_gold"):
-                item = dict(e[key], n_rows=e["n"])
-                parts.append(cell(item))
-            print(f"  {LABELS[model]:<20} {parts[0]:<34} {parts[1]:<38} {parts[2]}")
+            parts = [cell(dict(e[k], n_rows=e["n"])) for k in keys]
+            print("  " + f"{LABELS[model]:<20} " + " ".join(f"{p:<{w}}" for p, w in zip(parts, widths)))
     print("\nHow to read this: if the adapter is clearly better than base on exact match AND has few")
     print("extra JOINs on multi-table rows, it learned its training data and the company-database")
     print("failure is a transfer problem. If it shows many extra JOINs even here, suspect the")
     print("training recipe. Exact match is style-dependent, so do not present it as 'accuracy'.")
+    if with_distractors:
+        print("\nDistractor test: unneeded tables/columns were ADDED to every schema. A model that ignores")
+        print("them scores near 0% on the two 'Uses an added ...' columns. The base model is the reference.")
 
 
-def print_examples(rows, limit=5):
+def print_examples(rows, limit=5, with_distractors=False):
+    if with_distractors:
+        used = [r for r in rows if score_row(r, "finetuned")["uses_distractor_table"]]
+        print("\n" + "=" * 112)
+        print(f"EXAMPLES: fine-tuned outputs that use an ADDED (unneeded) table (showing {min(3, len(used))} of {len(used)})")
+        print("=" * 112)
+        for r in used[:3]:
+            print(f"\nQ : {r['question']}\nSchema: {r['context']}\nAdded tables: {r.get('added_tables')}\n"
+                  f"Gold  : {r['gold_sql']}\nBase  : {r.get('base_sql')}\nTuned : {r.get('finetuned_sql')}")
     bad = [r for r in rows if r["group"] == "multi_table" and score_row(r, "finetuned")["more_joins_than_gold"]]
     if not bad:
         return
@@ -236,18 +268,23 @@ def save_scores(out_dir, meta, rows, summary):
         w = csv.writer(f)
         w.writerow(["index", "group", "question", "gold_sql",
                     "base_sql", "base_valid", "base_exact", "base_joins",
-                    "finetuned_sql", "finetuned_valid", "finetuned_exact", "finetuned_joins", "gold_joins"])
+                    "finetuned_sql", "finetuned_valid", "finetuned_exact", "finetuned_joins", "gold_joins",
+                    "added_tables", "added_columns", "base_uses_added_table", "finetuned_uses_added_table"])
         for r in rows:
             b, t = score_row(r, "base"), score_row(r, "finetuned")
             w.writerow([r["index"], r["group"], r["question"], r["gold_sql"],
                         r.get("base_sql"), b["valid"], b["exact_match"], b["joins"],
-                        r.get("finetuned_sql"), t["valid"], t["exact_match"], t["joins"], t["gold_joins"]])
+                        r.get("finetuned_sql"), t["valid"], t["exact_match"], t["joins"], t["gold_joins"],
+                        " ".join(r.get("added_tables") or []), " ".join(r.get("added_columns") or []),
+                        b["uses_distractor_table"], t["uses_distractor_table"]])
 
 
 # --------------------------------------------------------------------------- generation (GPU)
-def generate_all(rows, meta, out_dir, max_new_tokens):
+def generate_all(rows, meta, out_dir, max_new_tokens, adapter_path=None):
     from model import (ADAPTER_PATH, attach_adapter, count_lora_layers,
                        load_base_model, load_tokenizer)
+
+    adapter_path = Path(adapter_path) if adapter_path else ADAPTER_PATH
 
     prompts = [build_prompt(r["context"], r["question"]) for r in rows]
     gen_path = out_dir / "generated.json"
@@ -273,11 +310,11 @@ def generate_all(rows, meta, out_dir, max_new_tokens):
     checkpoint()
 
     print("PHASE 2: base + adapter (attached AFTER base generation is finished)")
-    tuned = attach_adapter(base_model)
+    tuned = attach_adapter(base_model, adapter_path)
     n_lora = count_lora_layers(tuned)
     assert n_lora > 0, "Adapter did not attach!"
     meta["lora_layers_attached"] = n_lora
-    meta["adapter_path"] = str(ADAPTER_PATH)
+    meta["adapter_path"] = str(adapter_path)
     run("finetuned", tuned, tokenizer)
     checkpoint()
     return gen_path
@@ -291,6 +328,11 @@ def main():
     parser.add_argument("--per-group", type=int, default=100, help="max rows per group (single/multi table)")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--max-new-tokens", type=int, default=256)
+    parser.add_argument("--adapter", default=None, help="adapter folder to test (default: models/adapter)")
+    parser.add_argument("--distractor-tables", type=int, default=0,
+                        help="add this many UNNEEDED tables to every schema (distractor test)")
+    parser.add_argument("--distractor-cols", type=int, default=0,
+                        help="add this many UNNEEDED columns to every schema (distractor test)")
     parser.add_argument("--allow-overlap", action="store_true",
                         help="keep rows whose question text also appears among the training questions")
     parser.add_argument("--out-dir", default=None,
@@ -315,10 +357,12 @@ def main():
             train_part, val_part = split["train"], split["test"]
             check_split_matches_training(train_part[0]["question"])
             print("Split check passed: the rebuilt split starts with the notebook's first training example.")
+            pool_contexts = list(val_part["context"])
             rows, info = select_from_pool(val_part["question"], val_part["context"], val_part["answer"],
                                           train_part["question"], args.per_group, args.seed,
                                           args.allow_overlap, index_offset=0, source="validation")
         else:
+            pool_contexts = list(ds["context"][TRAIN_ROWS:])
             rows, info = select_rows(ds["question"], ds["context"], ds["answer"],
                                      args.per_group, args.seed, TRAIN_ROWS, args.allow_overlap)
         for group in ("single_table", "multi_table"):
@@ -327,16 +371,31 @@ def main():
                 if args.source == "validation":
                     raise SystemExit(message)
                 print("WARNING:", message)
+        if args.distractor_tables or args.distractor_cols:
+            augmenter = Augmenter(pool_contexts, seed=args.seed)
+            statuses = []
+            for row in rows:
+                result = augmenter.augment_fixed(row["context"], row["gold_sql"], row["index"],
+                                                 args.distractor_tables, args.distractor_cols)
+                statuses.append(result.status)
+                if result.status == "augmented":
+                    row["original_context"] = row["context"]
+                    row["context"] = result.context
+                    row["added_tables"], row["added_columns"] = result.added_tables, result.added_columns
+            info["distractors"] = {"tables": args.distractor_tables, "columns": args.distractor_cols,
+                                   "status_counts": {s: statuses.count(s) for s in sorted(set(statuses))}}
+            print(f"Distractors added: {info['distractors']}")
         n_single = sum(1 for r in rows if r["group"] == "single_table")
         print(f"Selected {len(rows)} unseen rows ({n_single} single-table, {len(rows) - n_single} multi-table). {info}")
         meta = {"created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "dataset": DATASET_NAME, "source": args.source, "train_rows_excluded": TRAIN_ROWS, "selection": info,
                 "max_new_tokens": args.max_new_tokens, "package_versions": package_versions()}
-        generate_all(rows, meta, out_dir, args.max_new_tokens)
+        generate_all(rows, meta, out_dir, args.max_new_tokens, args.adapter)
 
     summary = summarise(rows)
-    print_summary(summary)
-    print_examples(rows)
+    with_distractors = has_distractors(rows)
+    print_summary(summary, with_distractors)
+    print_examples(rows, with_distractors=with_distractors)
     save_scores(out_dir, meta, rows, summary)
     saved_files = "in_distribution_results.json, in_distribution_per_row.csv"
     if not args.score_only:

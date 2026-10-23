@@ -233,6 +233,11 @@ def mark(ok):
     return "PASS" if ok else "FAIL"
 
 
+def format_p(p):
+    """Show tiny p-values in scientific notation instead of rounding them to 0.000."""
+    return f"{p:.3f}" if p >= 0.001 else f"{p:.1e}"
+
+
 def print_per_question_table(evaluated):
     print("\n" + "=" * 100)
     print("PER-QUESTION RESULTS (execution correctness)")
@@ -277,7 +282,7 @@ def print_summary(summary):
     print("\nPaired comparison (same questions, both models):")
     print(f"  both correct: {p['both_correct']} | only base correct: {p['only_base_correct']} | "
           f"only fine-tuned correct: {p['only_finetuned_correct']} | neither: {p['neither_correct']}")
-    print(f"  rough sign test on the 'only one correct' questions: p = {p['sign_test_p']:.3f} "
+    print(f"  rough sign test on the 'only one correct' questions: p = {format_p(p['sign_test_p'])} "
           "(small p = difference unlikely to be chance; with few questions it is rarely small)")
 
     print("\nFailure types among wrong answers:")

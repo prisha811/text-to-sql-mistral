@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from eval_in_distribution import (KNOWN_FIRST_TRAIN_QUESTION, check_sql_valid,  # noqa: E402
-                                  check_split_matches_training, count_joins, norm_question,
-                                  score_row, select_from_pool, select_rows, summarise)
+                                  check_split_matches_training, count_joins, has_distractors,
+                                  norm_question, score_row, select_from_pool, select_rows, summarise)
 
 # Taken from the schema-check output (multi-table row of sql-create-context).
 MULTI_CONTEXT = ("CREATE TABLE department (creation VARCHAR, department_id VARCHAR); "
@@ -118,6 +118,21 @@ def test_validation_style_pool_has_both_groups_and_drops_trained_questions():
     assert all(r["source"] == "validation" for r in rows)
     assert info["removed_question_overlap_with_training_rows"] == 1
     assert {r["index"] for r in rows} == {1, 2}   # position in the validation split
+
+
+def test_distractor_usage_is_detected_per_model():
+    context = SINGLE_CONTEXT + "; CREATE TABLE singer (name VARCHAR, country VARCHAR)"
+    row = {"context": context, "gold_sql": "SELECT total FROM table_14260687_3", "group": "single_table",
+           "added_tables": ["singer"], "added_columns": ["country"],
+           "base_sql": "SELECT total FROM table_14260687_3",
+           "finetuned_sql": "SELECT T1.total FROM table_14260687_3 AS T1 JOIN singer AS T2 ON 1 = 1 WHERE T2.country = 'x'"}
+    base, tuned = score_row(row, "base"), score_row(row, "finetuned")
+    assert not base["uses_distractor_table"] and not base["uses_distractor_column"]
+    assert tuned["uses_distractor_table"] and tuned["uses_distractor_column"]
+    assert has_distractors([row]) and not has_distractors([dict(row, added_tables=[], added_columns=[])])
+    summary = summarise([row])
+    assert summary["finetuned"]["all"]["uses_distractor_table"]["k"] == 1
+    assert summary["base"]["all"]["uses_distractor_table"]["k"] == 0
 
 
 if __name__ == "__main__":
