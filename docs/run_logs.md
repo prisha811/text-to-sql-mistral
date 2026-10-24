@@ -59,6 +59,8 @@ avg_tables_per_schema: 1.48 before, 2.433 after
 rows_reverted_because_too_long: 0
 ```
 
-## v2 training attempt
+## v2 training attempts
 
-The first full-training attempt stopped at step 0 with `RuntimeError: gemm input type at::BFloat16 and output type float is only supported for CUDA devices with compute capability 8.0 or higher`, raised inside TRL's `chunked_logprob` kernel. The Colab T4 has compute capability 7.5. `train_qlora.py` was changed to use the plain `transformers` Trainer. The retry could not run because Colab's free GPU quota was used up.
+1. The first full-training attempt (TRL) stopped at step 0 with `RuntimeError: gemm input type at::BFloat16 and output type float is only supported for CUDA devices with compute capability 8.0 or higher`, raised inside TRL's `chunked_logprob` kernel. The Colab T4 has compute capability 7.5. `train_qlora.py` was changed to use the plain `transformers` Trainer.
+2. Smoke test of the new path (`--augment --max-steps 5`): completed and saved an adapter (not usable, only 5 steps). 5 steps took 2 min 16 s (about 27 s per step).
+3. Full run (`--augment --save-steps 100`): reached step 91 of 625 after 42 min 58 s (about 28 s per step on average; the progress bar's smoothed estimate was 30.6 s per step with 4 h 32 min remaining, so a full run is roughly 5 hours) when the free Colab GPU quota ended. Training loss logged every 10 steps fell from 1.747 (step 10) to 0.754 (step 90). Checkpoints were saved every 100 steps, so none existed and the run could not be resumed.

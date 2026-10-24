@@ -132,7 +132,7 @@ Console output of runs 2 and 3 is in `docs/run_logs.md`.
 
 ## Status of v2 (not trained)
 
-`python src/train_qlora.py --augment` trains the same recipe with one change: 75% of training schemas get up to 3 distractor tables and up to 4 distractor columns (`src/augment.py`; gold SQL still compiles on the new schema; validation rows are untouched). The data build was checked on the real dataset (3,351 augmented, 1,370 unchanged, 279 kept as original because the SQL did not compile on the new schema). Training was **not completed**: the first attempt crashed because the current TRL release needs a GPU with compute capability 8.0+ (the T4 is 7.5), so `train_qlora.py` was rewritten to use the plain `transformers` Trainer, and GPU quota ran out before the retry. **No v2 results are reported.**
+`python src/train_qlora.py --augment` trains the same recipe with one change: 75% of training schemas get up to 3 distractor tables and up to 4 distractor columns (`src/augment.py`; gold SQL still compiles on the new schema; validation rows are untouched). The data build was checked on the real dataset (3,351 augmented, 1,370 unchanged, 279 kept as original because the SQL did not compile on the new schema). Training was **not completed**. The first attempt crashed because the current TRL release needs a GPU with compute capability 8.0+ (the T4 is 7.5), so `train_qlora.py` was rewritten to use the plain `transformers` Trainer. A 5-step smoke test of the new path ran end to end. A full run then reached step 91 of 625 in about 43 minutes (about 28 s per step on average, so roughly 5 hours for the whole run on a T4, compared with about 75 minutes for the original v1 notebook run on the same GPU type; I did not investigate that difference) before the free Colab GPU quota ended. No checkpoint had been saved yet, so that run was lost. **No v2 results are reported.**
 
 ## Limitations
 
@@ -189,7 +189,7 @@ python src/eval_in_distribution.py                                              
 python src/eval_in_distribution.py --distractor-tables 2 --distractor-cols 2 --per-group 50 --out-dir outputs/distractor_v1   # GPU
 ```
 
-To try v2: `python src/train_qlora.py --augment --max-steps 5 --output-dir /content/smoke` (smoke test), then `python src/train_qlora.py --augment --output-dir <folder> --save-steps 100`, then rerun the commands above with `--adapter <folder>`.
+To try v2: `python src/train_qlora.py --augment --max-steps 5 --output-dir /content/smoke` (smoke test), then `python src/train_qlora.py --augment --output-dir <folder> --save-steps 25` (expect about 5 hours on a T4; add `--resume` to continue after an interruption), then rerun the commands above with `--adapter <folder>`.
 
 ## Next steps
 
