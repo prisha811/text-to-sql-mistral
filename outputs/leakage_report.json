@@ -1,0 +1,21 @@
+{
+  "training_rows_checked": 5500,
+  "test_questions": 62,
+  "near_match_threshold": 0.7,
+  "flagged": [
+    {
+      "id": 9,
+      "question": "How many employees are there in total?",
+      "similarity": 0.75,
+      "closest_training_question": "How many countries are there in total?",
+      "gold_sql_in_training": true
+    }
+  ],
+  "training_rows_with_table_name": {
+    "employees": 83,
+    "employee": 57,
+    "departments": 19,
+    "department": 70,
+    "projects": 33
+  }
+}

@@ -22,3 +22,8 @@ env/
 .cache/
 .cache/huggingface/
 huggingface/
+
+# Scratch files
+*.zip
+outputs/smoke*
+.DS_Store

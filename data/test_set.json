@@ -1,0 +1,374 @@
+[
+  {
+    "id": 1,
+    "category": "simple",
+    "question": "List the names of all departments.",
+    "gold_sql": "SELECT department_name FROM departments"
+  },
+  {
+    "id": 2,
+    "category": "simple",
+    "question": "What is the name of the department with department_id 3?",
+    "gold_sql": "SELECT department_name FROM departments WHERE department_id = 3"
+  },
+  {
+    "id": 3,
+    "category": "simple",
+    "question": "List the names of employees who live in Pune.",
+    "gold_sql": "SELECT name FROM employees WHERE city = 'Pune'"
+  },
+  {
+    "id": 4,
+    "category": "simple",
+    "question": "Show the names of employees earning more than 90000.",
+    "gold_sql": "SELECT name FROM employees WHERE salary > 90000"
+  },
+  {
+    "id": 5,
+    "category": "simple",
+    "question": "List the names of projects that are on hold.",
+    "gold_sql": "SELECT project_name FROM projects WHERE status = 'on_hold'"
+  },
+  {
+    "id": 6,
+    "category": "simple",
+    "question": "Show the names of employees with less than 3 years of experience.",
+    "gold_sql": "SELECT name FROM employees WHERE experience < 3"
+  },
+  {
+    "id": 7,
+    "category": "simple",
+    "question": "Which projects have a budget of at least 150000? Return the project names.",
+    "gold_sql": "SELECT project_name FROM projects WHERE budget >= 150000"
+  },
+  {
+    "id": 8,
+    "category": "simple",
+    "question": "List the names of employees who have no manager.",
+    "gold_sql": "SELECT name FROM employees WHERE manager_id IS NULL"
+  },
+  {
+    "id": 9,
+    "category": "aggregation",
+    "question": "How many employees are there in total?",
+    "gold_sql": "SELECT COUNT(*) FROM employees"
+  },
+  {
+    "id": 10,
+    "category": "aggregation",
+    "question": "What is the average experience of all employees?",
+    "gold_sql": "SELECT AVG(experience) FROM employees"
+  },
+  {
+    "id": 11,
+    "category": "aggregation",
+    "question": "What is the lowest salary?",
+    "gold_sql": "SELECT MIN(salary) FROM employees"
+  },
+  {
+    "id": 12,
+    "category": "aggregation",
+    "question": "What is the total budget of all projects?",
+    "gold_sql": "SELECT SUM(budget) FROM projects"
+  },
+  {
+    "id": 13,
+    "category": "aggregation",
+    "question": "How many projects are currently active?",
+    "gold_sql": "SELECT COUNT(*) FROM projects WHERE status = 'active'"
+  },
+  {
+    "id": 14,
+    "category": "aggregation",
+    "question": "What is the highest salary among employees living in Mumbai?",
+    "gold_sql": "SELECT MAX(salary) FROM employees WHERE city = 'Mumbai'"
+  },
+  {
+    "id": 15,
+    "category": "aggregation",
+    "question": "How many different cities do employees live in?",
+    "gold_sql": "SELECT COUNT(DISTINCT city) FROM employees"
+  },
+  {
+    "id": 16,
+    "category": "aggregation",
+    "question": "What is the total number of hours logged across all assignments?",
+    "gold_sql": "SELECT SUM(hours) FROM assignments"
+  },
+  {
+    "id": 17,
+    "category": "order_limit",
+    "question": "Name the 3 highest-paid employees, highest first.",
+    "gold_sql": "SELECT name FROM employees ORDER BY salary DESC LIMIT 3"
+  },
+  {
+    "id": 18,
+    "category": "order_limit",
+    "question": "List the names of the 5 most experienced employees, most experienced first.",
+    "gold_sql": "SELECT name FROM employees ORDER BY experience DESC LIMIT 5"
+  },
+  {
+    "id": 19,
+    "category": "order_limit",
+    "question": "What is the name of the project with the largest budget?",
+    "gold_sql": "SELECT project_name FROM projects ORDER BY budget DESC LIMIT 1"
+  },
+  {
+    "id": 20,
+    "category": "order_limit",
+    "question": "Return the name and salary of the lowest-paid employee.",
+    "gold_sql": "SELECT name, salary FROM employees ORDER BY salary ASC LIMIT 1"
+  },
+  {
+    "id": 21,
+    "category": "group_by",
+    "question": "For each city, return the city and the number of employees living there.",
+    "gold_sql": "SELECT city, COUNT(*) FROM employees GROUP BY city"
+  },
+  {
+    "id": 22,
+    "category": "group_by",
+    "question": "For each project status, return the status and the number of projects.",
+    "gold_sql": "SELECT status, COUNT(*) FROM projects GROUP BY status"
+  },
+  {
+    "id": 23,
+    "category": "group_by",
+    "question": "For each department_id, return the department_id and the average salary of its employees.",
+    "gold_sql": "SELECT department_id, AVG(salary) FROM employees GROUP BY department_id"
+  },
+  {
+    "id": 24,
+    "category": "group_by",
+    "question": "For each department_id, return the department_id and the total budget of its projects.",
+    "gold_sql": "SELECT department_id, SUM(budget) FROM projects GROUP BY department_id"
+  },
+  {
+    "id": 25,
+    "category": "group_by",
+    "question": "For each project_id, return the project_id and the total hours assigned to it.",
+    "gold_sql": "SELECT project_id, SUM(hours) FROM assignments GROUP BY project_id"
+  },
+  {
+    "id": 26,
+    "category": "having",
+    "question": "Which cities have more than 7 employees? Return the city names.",
+    "gold_sql": "SELECT city FROM employees GROUP BY city HAVING COUNT(*) > 7"
+  },
+  {
+    "id": 27,
+    "category": "having",
+    "question": "Return the department_ids whose average salary is above 85000.",
+    "gold_sql": "SELECT department_id FROM employees GROUP BY department_id HAVING AVG(salary) > 85000"
+  },
+  {
+    "id": 28,
+    "category": "having",
+    "question": "Which project_ids have more than 5 employees assigned? Return the project_ids.",
+    "gold_sql": "SELECT project_id FROM assignments GROUP BY project_id HAVING COUNT(*) > 5"
+  },
+  {
+    "id": 29,
+    "category": "having",
+    "question": "Return the department_ids that have at least 2 projects.",
+    "gold_sql": "SELECT department_id FROM projects GROUP BY department_id HAVING COUNT(*) >= 2"
+  },
+  {
+    "id": 30,
+    "category": "join",
+    "question": "List each employee's name together with the name of their department.",
+    "gold_sql": "SELECT e.name, d.department_name FROM employees e JOIN departments d ON e.department_id = d.department_id"
+  },
+  {
+    "id": 31,
+    "category": "join",
+    "question": "List the names of employees who work in the Engineering department.",
+    "gold_sql": "SELECT e.name FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name = 'Engineering'"
+  },
+  {
+    "id": 32,
+    "category": "join",
+    "question": "Return the names of the projects that belong to the Marketing department.",
+    "gold_sql": "SELECT p.project_name FROM projects p JOIN departments d ON p.department_id = d.department_id WHERE d.department_name = 'Marketing'"
+  },
+  {
+    "id": 33,
+    "category": "join",
+    "question": "What is the average salary of employees in the Sales department?",
+    "gold_sql": "SELECT AVG(e.salary) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name = 'Sales'"
+  },
+  {
+    "id": 34,
+    "category": "join",
+    "question": "How many employees work in the Finance or HR departments?",
+    "gold_sql": "SELECT COUNT(*) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name IN ('Finance', 'HR')"
+  },
+  {
+    "id": 35,
+    "category": "join",
+    "question": "For each department name, return the department name and its number of employees.",
+    "gold_sql": "SELECT d.department_name, COUNT(e.employee_id) FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_name"
+  },
+  {
+    "id": 36,
+    "category": "join",
+    "question": "Return each department name with the total salary of its employees.",
+    "gold_sql": "SELECT d.department_name, SUM(e.salary) FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_name"
+  },
+  {
+    "id": 37,
+    "category": "join",
+    "question": "List the names of departments that have no employees.",
+    "gold_sql": "SELECT d.department_name FROM departments d LEFT JOIN employees e ON e.department_id = d.department_id WHERE e.employee_id IS NULL"
+  },
+  {
+    "id": 38,
+    "category": "multi_join",
+    "question": "List the names of employees assigned to the project named Apollo.",
+    "gold_sql": "SELECT e.name FROM employees e JOIN assignments a ON a.employee_id = e.employee_id JOIN projects p ON a.project_id = p.project_id WHERE p.project_name = 'Apollo'"
+  },
+  {
+    "id": 39,
+    "category": "multi_join",
+    "question": "For each project name, return the project name and the number of employees assigned to it.",
+    "gold_sql": "SELECT p.project_name, COUNT(a.employee_id) FROM projects p JOIN assignments a ON a.project_id = p.project_id GROUP BY p.project_name"
+  },
+  {
+    "id": 40,
+    "category": "multi_join",
+    "question": "What is the total number of hours worked by the employee named Aarav?",
+    "gold_sql": "SELECT SUM(a.hours) FROM assignments a JOIN employees e ON a.employee_id = e.employee_id WHERE e.name = 'Aarav'"
+  },
+  {
+    "id": 41,
+    "category": "multi_join",
+    "question": "Return the distinct names of employees who work on active projects.",
+    "gold_sql": "SELECT DISTINCT e.name FROM employees e JOIN assignments a ON a.employee_id = e.employee_id JOIN projects p ON a.project_id = p.project_id WHERE p.status = 'active'"
+  },
+  {
+    "id": 42,
+    "category": "multi_join",
+    "question": "For each department name, return the department name and the total hours logged by its employees.",
+    "gold_sql": "SELECT d.department_name, SUM(a.hours) FROM departments d JOIN employees e ON e.department_id = d.department_id JOIN assignments a ON a.employee_id = e.employee_id GROUP BY d.department_name"
+  },
+  {
+    "id": 43,
+    "category": "multi_join",
+    "question": "List the distinct names of employees who work on a project that belongs to a different department than their own.",
+    "gold_sql": "SELECT DISTINCT e.name FROM employees e JOIN assignments a ON a.employee_id = e.employee_id JOIN projects p ON a.project_id = p.project_id WHERE p.department_id <> e.department_id"
+  },
+  {
+    "id": 44,
+    "category": "subquery",
+    "question": "List the names of employees who earn more than the average salary.",
+    "gold_sql": "SELECT name FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)"
+  },
+  {
+    "id": 45,
+    "category": "subquery",
+    "question": "What is the name of the employee with the highest salary?",
+    "gold_sql": "SELECT name FROM employees WHERE salary = (SELECT MAX(salary) FROM employees)"
+  },
+  {
+    "id": 46,
+    "category": "subquery",
+    "question": "List the names of employees who are not assigned to any project.",
+    "gold_sql": "SELECT name FROM employees WHERE employee_id NOT IN (SELECT employee_id FROM assignments)"
+  },
+  {
+    "id": 47,
+    "category": "subquery",
+    "question": "List the names of departments that have no projects.",
+    "gold_sql": "SELECT department_name FROM departments WHERE department_id NOT IN (SELECT department_id FROM projects)"
+  },
+  {
+    "id": 48,
+    "category": "subquery",
+    "question": "List the names of projects whose budget is above the average project budget.",
+    "gold_sql": "SELECT project_name FROM projects WHERE budget > (SELECT AVG(budget) FROM projects)"
+  },
+  {
+    "id": 49,
+    "category": "subquery",
+    "question": "List the names of employees whose salary is higher than the average salary of their own department.",
+    "gold_sql": "SELECT name FROM employees e WHERE salary > (SELECT AVG(salary) FROM employees WHERE department_id = e.department_id)"
+  },
+  {
+    "id": 50,
+    "category": "subquery",
+    "question": "What is the name of the department that has the most employees?",
+    "gold_sql": "SELECT d.department_name FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_id ORDER BY COUNT(*) DESC LIMIT 1"
+  },
+  {
+    "id": 51,
+    "category": "subquery",
+    "question": "List the names of employees who work on more than one project.",
+    "gold_sql": "SELECT name FROM employees WHERE employee_id IN (SELECT employee_id FROM assignments GROUP BY employee_id HAVING COUNT(*) > 1)"
+  },
+  {
+    "id": 52,
+    "category": "subquery",
+    "question": "How many employees earn more than the average salary of the Engineering department?",
+    "gold_sql": "SELECT COUNT(*) FROM employees WHERE salary > (SELECT AVG(e.salary) FROM employees e JOIN departments d ON e.department_id = d.department_id WHERE d.department_name = 'Engineering')"
+  },
+  {
+    "id": 53,
+    "category": "subquery",
+    "question": "What is the second highest salary?",
+    "gold_sql": "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)"
+  },
+  {
+    "id": 54,
+    "category": "self_join",
+    "question": "List each employee's name with their manager's name, only for employees who have a manager.",
+    "gold_sql": "SELECT e.name, m.name FROM employees e JOIN employees m ON e.manager_id = m.employee_id"
+  },
+  {
+    "id": 55,
+    "category": "self_join",
+    "question": "How many employees report directly to the employee with employee_id 1?",
+    "gold_sql": "SELECT COUNT(*) FROM employees WHERE manager_id = 1"
+  },
+  {
+    "id": 56,
+    "category": "misc",
+    "question": "How many employees have between 5 and 10 years of experience, inclusive?",
+    "gold_sql": "SELECT COUNT(*) FROM employees WHERE experience BETWEEN 5 AND 10"
+  },
+  {
+    "id": 57,
+    "category": "misc",
+    "question": "List the names of employees whose name starts with the letter A.",
+    "gold_sql": "SELECT name FROM employees WHERE name LIKE 'A%'"
+  },
+  {
+    "id": 58,
+    "category": "misc",
+    "question": "What is the average salary of employees with more than 5 years of experience?",
+    "gold_sql": "SELECT AVG(salary) FROM employees WHERE experience > 5"
+  },
+  {
+    "id": 59,
+    "category": "misc",
+    "question": "List the names of employees who were hired after 2020.",
+    "gold_sql": "SELECT name FROM employees WHERE hire_year > 2020"
+  },
+  {
+    "id": 60,
+    "category": "misc",
+    "question": "How many employees were hired in 2018?",
+    "gold_sql": "SELECT COUNT(*) FROM employees WHERE hire_year = 2018"
+  },
+  {
+    "id": 61,
+    "category": "misc",
+    "question": "What is the earliest hire year among all employees?",
+    "gold_sql": "SELECT MIN(hire_year) FROM employees"
+  },
+  {
+    "id": 62,
+    "category": "misc",
+    "question": "Return the names of departments whose employees' total salary exceeds 300000.",
+    "gold_sql": "SELECT d.department_name FROM departments d JOIN employees e ON e.department_id = d.department_id GROUP BY d.department_name HAVING SUM(e.salary) > 300000"
+  }
+]
