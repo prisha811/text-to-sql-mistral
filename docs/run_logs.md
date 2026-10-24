@@ -1,6 +1,6 @@
 # Console output of the diagnostic runs
 
-These tables are copied from the console output of the runs (Colab, Tesla T4, `src/eval_in_distribution.py`). The per-row files of these runs are not in the repository. Re-running the commands in the README regenerates them.
+These tables are copied from the console output of the runs (Colab, Tesla T4). The per-row files of these runs are not in the repository. Re-running the commands in the README regenerates them.
 
 ## In-distribution check on validation rows
 
@@ -64,3 +64,16 @@ rows_reverted_because_too_long: 0
 1. The first full-training attempt (TRL) stopped at step 0 with `RuntimeError: gemm input type at::BFloat16 and output type float is only supported for CUDA devices with compute capability 8.0 or higher`, raised inside TRL's `chunked_logprob` kernel. The Colab T4 has compute capability 7.5. `train_qlora.py` was changed to use the plain `transformers` Trainer.
 2. Smoke test of the new path (`--augment --max-steps 5`): completed and saved an adapter (not usable, only 5 steps). 5 steps took 2 min 16 s (about 27 s per step).
 3. Full run (`--augment --save-steps 100`): reached step 91 of 625 after 42 min 58 s (about 28 s per step on average; the progress bar's smoothed estimate was 30.6 s per step with 4 h 32 min remaining, so a full run is roughly 5 hours) when the free Colab GPU quota ended. Training loss logged every 10 steps fell from 1.747 (step 10) to 0.754 (step 90). Checkpoints were saved every 100 steps, so none existed and the run could not be resumed.
+
+## Pilot: 10 questions on the original 8-employee database
+
+Console output of `python src/evaluate.py` on the first real generation run (original toy database, 10 hand-written questions with expected results; these files were removed from the repository afterwards, and the database was too small to be reliable, for example a wrong `salary > 10000` filter returned the right count).
+
+```
+Model                  Execution accuracy   95% CI        Valid SQL
+Base Mistral 7B        9/10 = 90.0%         59.6%-98.2%   10/10
+Fine-tuned (QLoRA)     6/10 = 60.0%         31.3%-83.2%    9/10
+Paired: both correct 6, only base correct 3, only fine-tuned correct 0, neither 1 (sign test p = 0.25)
+Fine-tuned failures: Q2 wrong rows, Q3 invalid SQL, Q5 wrong columns, Q9 wrong columns
+Base failure: Q9 wrong rows (the expected columns of Q9 were ambiguous)
+```

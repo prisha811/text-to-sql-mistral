@@ -146,30 +146,32 @@ Console output of runs 2 and 3 is in `docs/run_logs.md`.
 
 ## Project history
 
-An earlier version of this repository reported 100% for both models. Those numbers came from hand-written SQL stored in a file, not from the models, so that file was removed. The first real test (10 questions on the original 8-employee database) gave base 9/10 and adapter 6/10, which led to the larger database and test set above.
+An earlier version of this repository reported 100% for both models. Those numbers came from hand-written SQL stored in a file, not from the models, so that file was removed. The first real test (10 questions on the original 8-employee database) gave base 9/10 and adapter 6/10 (details in `docs/run_logs.md`; that toy database and its files were removed afterwards), which led to the larger database and test set above.
 
 ## Repository layout
 
 ```
+README.md, requirements.txt
 data/
   build_company_v2.py   builds company_v2.db (4 tables)
   make_test_set.py      writes + validates test_set.json (62 questions with gold SQL)
   company_v2.db, test_set.json
-  company.db, database.py, evaluation_questions.py   original 8-employee toy database (v1), kept for history
 models/adapter/         the trained QLoRA adapter (v1)
 notebooks/LLM.ipynb     the Colab notebook the adapter was trained in
 src/
   prompts.py            the one prompt template (training + inference)
   model.py              loads base model and adapter separately
-  generate_sql.py       base then adapter -> outputs JSON
+  generate_sql.py       base then adapter -> JSON of generated SQL
   evaluate.py           execution accuracy, valid SQL, exact match, CIs, paired test
   check_leakage.py      test questions vs the 5,500 training rows
   eval_in_distribution.py   in-distribution + distractor tests
   augment.py            distractor tables/columns for v2 training
   train_qlora.py        training script (v1 recipe, or --augment for v2)
-tests/                  CPU-only tests
-outputs/                result files of the 62-question run and the leakage report
-docs/run_logs.md        console output of the in-distribution and distractor runs
+tests/                  CPU-only tests (5 files)
+outputs/
+  test62/               62-question run: generated SQL + evaluation results
+  leakage_report.json
+docs/run_logs.md        console output of the pilot, in-distribution and distractor runs
 ```
 
 ## Reproduce
@@ -183,8 +185,8 @@ pip install -r requirements.txt
 python data/build_company_v2.py
 python data/make_test_set.py
 python src/check_leakage.py                                   # needs internet for the dataset
-python src/generate_sql.py --questions data/test_set.json --db data/company_v2.db --out outputs/generated_sql_v2.json   # GPU
-python src/evaluate.py --input outputs/generated_sql_v2.json --db data/company_v2.db --out-dir outputs/test62           # CPU
+python src/generate_sql.py --out outputs/test62/generated_sql.json     # GPU (uses data/test_set.json + data/company_v2.db)
+python src/evaluate.py --input outputs/test62/generated_sql.json       # CPU, writes next to the input
 python src/eval_in_distribution.py                                                                                      # GPU
 python src/eval_in_distribution.py --distractor-tables 2 --distractor-cols 2 --per-group 50 --out-dir outputs/distractor_v1   # GPU
 ```

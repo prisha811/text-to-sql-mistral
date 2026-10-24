@@ -26,7 +26,7 @@ analysis. With small test sets differences are often noise, and this script says
 
 Usage (from the repo root, no GPU needed):
     python src/evaluate.py
-    python src/evaluate.py --input outputs/generated_sql.json --db data/company.db
+    python src/evaluate.py --input outputs/test62/generated_sql.json --db data/company_v2.db
 """
 
 import argparse
@@ -41,9 +41,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_INPUT = ROOT / "outputs" / "generated_sql.json"
-DEFAULT_DB = ROOT / "data" / "company.db"
-DEFAULT_OUT_DIR = ROOT / "outputs"
+DEFAULT_INPUT = ROOT / "outputs" / "test62" / "generated_sql.json"
+DEFAULT_DB = ROOT / "data" / "company_v2.db"
 QUERY_TIMEOUT_SECONDS = 5
 MODELS = ("base", "finetuned")
 MODEL_LABELS = {"base": "Base Mistral 7B", "finetuned": "Fine-tuned (QLoRA)"}
@@ -364,7 +363,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--input", default=str(DEFAULT_INPUT), help="JSON written by generate_sql.py")
     parser.add_argument("--db", default=str(DEFAULT_DB), help="SQLite database to execute queries on")
-    parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
+    parser.add_argument("--out-dir", default=None, help="default: the folder of --input")
     args = parser.parse_args()
 
     with open(args.input, "r", encoding="utf-8") as f:
@@ -388,8 +387,9 @@ def main():
     print("\nMarkdown table (review before copying into the README):\n")
     print(markdown_table(summary))
 
-    save_outputs(Path(args.out_dir), args.input, args.db, data.get("metadata"), evaluated, summary)
-    print(f"\nSaved: {Path(args.out_dir) / 'evaluation_results.json'} and evaluation_per_question.csv")
+    out_dir = Path(args.out_dir) if args.out_dir else Path(args.input).parent
+    save_outputs(out_dir, args.input, args.db, data.get("metadata"), evaluated, summary)
+    print(f"\nSaved: {out_dir / 'evaluation_results.json'} and evaluation_per_question.csv")
 
 
 if __name__ == "__main__":

@@ -11,9 +11,9 @@ settings (greedy, same max_new_tokens). Nothing is hardcoded: every SQL string i
 output file was produced by a model during this run.
 
 Usage (from the repo root):
-    python src/generate_sql.py                       # 10 questions from data/evaluation_questions.py
+    python src/generate_sql.py                       # the 62 questions in data/test_set.json
     python src/generate_sql.py --limit 2             # quick smoke test
-    python src/generate_sql.py --questions data/test_set.json --db data/company.db
+    python src/generate_sql.py --questions data/test_set.json --db data/company_v2.db --out outputs/test62/generated_sql.json
 
 Output: outputs/generated_sql.json
 """
@@ -28,12 +28,12 @@ from importlib import metadata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))                    # so `data.evaluation_questions` can be imported
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from prompts import build_prompt, schema_from_sqlite  # noqa: E402
 
-DEFAULT_DB = ROOT / "data" / "company.db"
+DEFAULT_DB = ROOT / "data" / "company_v2.db"
+DEFAULT_QUESTIONS = ROOT / "data" / "test_set.json"
 DEFAULT_OUT = ROOT / "outputs" / "generated_sql.json"
 DEFAULT_MAX_NEW_TOKENS = 256  # the old notebook used 60, which cut some queries off mid-way
 
@@ -41,14 +41,10 @@ DEFAULT_MAX_NEW_TOKENS = 256  # the old notebook used 60, which cut some queries
 # --------------------------------------------------------------------------- helpers
 def load_questions(path=None, limit=None):
     """Return a list of dicts with at least a 'question' key. Extra keys are passed through."""
-    if path is None:
-        from data.evaluation_questions import evaluation_questions
-        items = [dict(q) for q in evaluation_questions]
-    else:
-        with open(path, "r", encoding="utf-8") as f:
-            items = json.load(f)
-        if isinstance(items, dict) and "questions" in items:
-            items = items["questions"]
+    with open(path or DEFAULT_QUESTIONS, "r", encoding="utf-8") as f:
+        items = json.load(f)
+    if isinstance(items, dict) and "questions" in items:
+        items = items["questions"]
     for i, item in enumerate(items, start=1):
         if "question" not in item:
             raise ValueError(f"Question #{i} has no 'question' field: {item}")
@@ -127,7 +123,7 @@ def save(out_path, metadata_dict, questions, base_raw, finetuned_raw):
 # --------------------------------------------------------------------------- main
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--questions", default=None, help="JSON file with a list of {'question': ...}. Default: data/evaluation_questions.py")
+    parser.add_argument("--questions", default=None, help="JSON file with a list of {'question': ...}. Default: data/test_set.json")
     parser.add_argument("--db", default=str(DEFAULT_DB), help="SQLite database used to build the schema in the prompt")
     parser.add_argument("--adapter", default=None, help="Adapter folder (default: models/adapter)")
     parser.add_argument("--out", default=str(DEFAULT_OUT), help="Where to write the JSON results")
@@ -157,7 +153,7 @@ def main():
         "decoding": {"do_sample": False, "max_new_tokens": args.max_new_tokens, "stop_strings": ["###"]},
         "database": str(args.db),
         "schema_in_prompt": schema,
-        "questions_source": args.questions or "data/evaluation_questions.py",
+        "questions_source": args.questions or "data/test_set.json",
         "num_questions": len(questions),
         "package_versions": package_versions(),
     }
