@@ -86,6 +86,17 @@ def attach_adapter(base_model, adapter_path=ADAPTER_PATH):
     return model
 
 
+def adapter_fingerprint(adapter_path=ADAPTER_PATH) -> str:
+    """First 12 hex characters of the SHA-256 of adapter_model.safetensors: records WHICH adapter produced a result."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(Path(adapter_path) / "adapter_model.safetensors", "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()[:12]
+
+
 def count_lora_layers(model) -> int:
     """Number of LoRA-wrapped linear layers. For r=16 on q/k/v/o_proj in 32 layers this is 128."""
     return sum(1 for name, _ in model.named_modules() if name.endswith("lora_A"))

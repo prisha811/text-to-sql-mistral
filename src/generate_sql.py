@@ -132,8 +132,8 @@ def main():
     args = parser.parse_args()
 
     # Heavy imports happen here so helpers above can be tested without a GPU.
-    from model import (ADAPTER_PATH, BASE_MODEL, attach_adapter, count_lora_layers,
-                       load_base_model, load_tokenizer)
+    from model import (ADAPTER_PATH, BASE_MODEL, adapter_fingerprint, attach_adapter,
+                       count_lora_layers, load_base_model, load_tokenizer)
 
     adapter_path = Path(args.adapter) if args.adapter else ADAPTER_PATH
     out_path = Path(args.out)
@@ -170,13 +170,14 @@ def main():
 
     # ---- Phase 2: attach the adapter AFTER base generation is finished ----
     print("PHASE 2: base + QLoRA adapter")
-    finetuned_model = attach_adapter(base_model)     # modifies base_model in place - fine, we are done with it
+    finetuned_model = attach_adapter(base_model, adapter_path)   # modifies base_model in place - fine, we are done with it
     n_lora = count_lora_layers(finetuned_model)
     assert n_lora > 0, "Adapter did not attach: no LoRA layers found!"
-    print(f"Adapter attached ({n_lora} LoRA layers).")
+    print(f"Adapter attached from {adapter_path} ({n_lora} LoRA layers).")
     finetuned_raw = run_model("finetuned", finetuned_model, tokenizer, prompts, args.max_new_tokens)
 
     meta["lora_layers_attached"] = n_lora
+    meta["adapter_sha256_12"] = adapter_fingerprint(adapter_path)
     save(out_path, meta, questions, base_raw, finetuned_raw)
 
     differing = sum(1 for b, f in zip(base_raw, finetuned_raw) if extract_sql(b) != extract_sql(f))

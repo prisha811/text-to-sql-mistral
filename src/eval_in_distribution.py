@@ -281,7 +281,7 @@ def save_scores(out_dir, meta, rows, summary):
 
 # --------------------------------------------------------------------------- generation (GPU)
 def generate_all(rows, meta, out_dir, max_new_tokens, adapter_path=None):
-    from model import (ADAPTER_PATH, attach_adapter, count_lora_layers,
+    from model import (ADAPTER_PATH, adapter_fingerprint, attach_adapter, count_lora_layers,
                        load_base_model, load_tokenizer)
 
     adapter_path = Path(adapter_path) if adapter_path else ADAPTER_PATH
@@ -315,6 +315,7 @@ def generate_all(rows, meta, out_dir, max_new_tokens, adapter_path=None):
     assert n_lora > 0, "Adapter did not attach!"
     meta["lora_layers_attached"] = n_lora
     meta["adapter_path"] = str(adapter_path)
+    meta["adapter_sha256_12"] = adapter_fingerprint(adapter_path)
     run("finetuned", tuned, tokenizer)
     checkpoint()
     return gen_path
